@@ -9,3 +9,4 @@ scikit-optimize>=0.7.4
 scipy==1.4.1
 seaborn>=0.10.1
 tensorflow==2.2.1
+keras==2.4.0
