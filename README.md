@@ -32,9 +32,7 @@ stat447_project
  ```
  virtualenv -p python3 stat447env
  ```
- 
- This will create a folder in your current directory that stores all the packages for this virtual environment.
- 
+  
 4. Activate the environment
  OS X/Linux:
  ```
@@ -44,8 +42,6 @@ stat447_project
  ```
  stat447env\Scripts\activate
  ```
- If you happen to use csh or fish shell, source the corresponding activate file. 
- After a successful activation, something like `(cpsc330env)` should show up in the terminal.
  
 5. Download [requirements.txt](requirements.txt) and put it in your working directory. Then install the dependencies listed with
  ```
@@ -58,3 +54,6 @@ stat447_project
  ```
  
 7. Make sure not to commit your environment folder (`.env/` I think)
+
+
+[Credit](https://github.com/UBC-CS/cpsc330/blob/master/docs/setup.md)
