@@ -73,3 +73,27 @@ for index, row in df_train.iterrows():
         'label3': row['Label_2_Virus_category'],
     }, ignore_index = True)
 print('Finished creating training set...')
+
+
+
+# histogram
+countNormal = 0
+countPenu = 0
+
+avgCountsNormal = [0] * 257
+avgCountsPneu = [0] * 257
+for row in df_transform.iterrows():
+    counts, bins, patches = plt.hist(row['img'].ravel(), 256, [0, 256])
+    patientType = row['label1']
+    if patientType == "Normal":
+        avgCountsNormal = avgCountsNormal.add(counts)
+        countNormal += 1
+    elif patientType == "Pneumonia":
+        avgCountsPneu = avgCountsPneu.add(counts)
+        countPenu += 1
+avgCountsNormal = avgCountsNormal / countNormal
+avgCountsPneu = avgCountsPneu / countPenu
+
+# plot histograms
+plt.hist(avgCountsNormal, 256, [0, 256])
+plt.hist(avgCountsPneu, 256, [0, 256])
