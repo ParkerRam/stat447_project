@@ -9,6 +9,23 @@ from tensorflow.keras.preprocessing.image import load_img
 summary = pd.read_csv('data/Chest_xray_Corona_dataset_Summary.csv', index_col=0)
 df = pd.read_csv('data/Chest_xray_Corona_Metadata.csv', index_col=0)
 
+# Remove Stress-Smoking, SARS, Strep rows since there are so little of them
+df = df[(df.Label_1_Virus_category != 'Stress-Smoking') &
+        (df.Label_2_Virus_category != 'SARS') & 
+        (df.Label_2_Virus_category != 'Streptococcus')]
+
+# Replace NaNs with 'Other'
+df = df.replace(np.nan, 'Other', regex=True)
+
+# Move 8 COVID-19 cases to test set since it has none of them
+count = 0
+for index, row in df.iterrows():
+    if (row['Label_2_Virus_category'] == 'COVID-19') & (row['Dataset_type'] == 'TRAIN'):
+        row['Dataset_type'] = 'TEST'
+        count += 1
+    if count > 7:
+        break
+        
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
 
