@@ -66,12 +66,41 @@ print('Creating training set...')
 for index, row in df_train.iterrows():
     img = cv2.imread('data/train/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
     imgr = cv2.resize(img, (100,100))
+
+# middle of grayscale, 127.5
+medianPixel = round(255 / 2)
+
+for index, row in df_train.iterrows():
+    img = cv2.imread('data/train/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
+    imgr = cv2.resize(img, (100,100))
+
+    # for calculation of stats
+    unique, counts = np.unique(imgr, return_counts=True)
+    pixelCounts = dict(zip(unique, counts))
+
+    imgPixels = imgr.ravel()
+
+    # light if > median; dark if < median
+    lightPixels = np.where(imgPixels > medianPixel)
+    darkPixels = np.where(imgPixels < medianPixel)
+
     df_transform = df_transform.append({
         'img': imgr,
         'label1': row['Label'],
         'label2': row['Label_1_Virus_category'],
         'label3': row['Label_2_Virus_category'],
+        'avgBrightness': np.mean(imgr),
+        'lightestPixel': np.max(imgr),
+        'numOfLightest': pixelCounts[np.max(imgr)],
+        'darkestPixel': np.min(imgr),
+        'numOfDarkest': pixelCounts[np.min(imgr)],
+        'numOfMedian': pixelCounts[medianPixel],
+        'numAboveMedian': len(lightPixels),
+        'numBelowMedian': len(darkPixels),
+        'avgAboveMedian': np.mean(lightPixels),
+        'avgBelowMedian': np.mean(darkPixels)
     }, ignore_index = True)
+    print(df_transform)
 print('Finished creating training set...')
 
 
