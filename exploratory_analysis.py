@@ -84,6 +84,10 @@ for index, row in df_train.iterrows():
     lightPixels = np.where(imgPixels > medianPixel)
     darkPixels = np.where(imgPixels < medianPixel)
 
+    numMedian = 0
+    if medianPixel in pixelCounts.keys():
+        numMedian = pixelCounts[medianPixel]
+
     df_transform = df_transform.append({
         'img': imgr,
         'label1': row['Label'],
@@ -94,7 +98,7 @@ for index, row in df_train.iterrows():
         'numOfLightest': pixelCounts[np.max(imgr)],
         'darkestPixel': np.min(imgr),
         'numOfDarkest': pixelCounts[np.min(imgr)],
-        'numOfMedian': pixelCounts[medianPixel],
+        'numOfMedian': numMedian,
         'numAboveMedian': len(lightPixels),
         'numBelowMedian': len(darkPixels),
         'avgAboveMedian': np.mean(lightPixels),
