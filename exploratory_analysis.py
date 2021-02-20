@@ -33,7 +33,7 @@ df_test = df[df['Dataset_type'] == 'TEST']
 try:
     os.mkdir('images/')
 except OSError:
-    print ('Creation of the directory failed')
+    print ('Creation of the directory failed or already created')
 else:
     print ('Successfully created the directory')
 
@@ -75,25 +75,34 @@ for index, row in df_train.iterrows():
 print('Finished creating training set...')
 
 
-
-# histogram
+print('Creating histograms...')
 countNormal = 0
 countPenu = 0
 
-avgCountsNormal = [0] * 257
-avgCountsPneu = [0] * 257
-for row in df_transform.iterrows():
-    counts, bins, patches = plt.hist(row['img'].ravel(), 256, [0, 256])
+avgCountsNormal = [0] * 256
+avgCountsPneu = [0] * 256
+for index, row in df_transform.iterrows():
+    counts, bins = np.histogram(df_transform.iloc[index]['img'].ravel(), 256, (0,255))
     patientType = row['label1']
     if patientType == "Normal":
-        avgCountsNormal = avgCountsNormal.add(counts)
+        avgCountsNormal = avgCountsNormal + counts
         countNormal += 1
-    elif patientType == "Pneumonia":
-        avgCountsPneu = avgCountsPneu.add(counts)
+    elif patientType == "Pnemonia":
+        avgCountsPneu = avgCountsPneu + counts
         countPenu += 1
+
 avgCountsNormal = avgCountsNormal / countNormal
 avgCountsPneu = avgCountsPneu / countPenu
 
-# plot histograms
-plt.hist(avgCountsNormal, 256, [0, 256])
-plt.hist(avgCountsPneu, 256, [0, 256])
+plt.bar(np.arange(0,256), avgCountsNormal)
+plt.xlabel('Pixel Brightness')
+plt.ylabel('Count')
+plt.savefig('images/hist_normal')
+
+plt.clf()
+
+plt.bar(np.arange(0,256), avgCountsPneu)
+plt.xlabel('Pixel Brightness')
+plt.ylabel('Count')
+plt.savefig('images/hist_pmeumonia')
+print('Finished creating histograms...')
