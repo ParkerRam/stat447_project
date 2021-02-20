@@ -58,21 +58,15 @@ load_img(img_path).save('images/bacteria.png')
 print('Image of bacteria lung saved to images/')
 
 
-# Setting data up
-# We may want to drop some rows (ARDS, combine Strep), set this up as a function to use for train and test, split this into new script later
-df_transform = pd.DataFrame(columns = ['img', 'label1', 'label2', 'label3'])
-
 print('Creating training set...')
-for index, row in df_train.iterrows():
-    img = cv2.imread('data/train/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-    imgr = cv2.resize(img, (100,100))
+df_transform = pd.DataFrame()
 
 # middle of grayscale, 127.5
 medianPixel = round(255 / 2)
 
 for index, row in df_train.iterrows():
     img = cv2.imread('data/train/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-    imgr = cv2.resize(img, (100,100))
+    imgr = cv2.resize(img, (200,200))
 
     # for calculation of stats
     unique, counts = np.unique(imgr, return_counts=True)
@@ -81,9 +75,9 @@ for index, row in df_train.iterrows():
     imgPixels = imgr.ravel()
 
     # light if > median; dark if < median
-    lightPixels = np.where(imgPixels > medianPixel)
-    darkPixels = np.where(imgPixels < medianPixel)
-
+    lightPixels = imgPixels[imgPixels > medianPixel]
+    darkPixels = imgPixels[imgPixels < medianPixel]
+    
     numMedian = 0
     if medianPixel in pixelCounts.keys():
         numMedian = pixelCounts[medianPixel]
@@ -104,7 +98,6 @@ for index, row in df_train.iterrows():
         'avgAboveMedian': np.mean(lightPixels),
         'avgBelowMedian': np.mean(darkPixels)
     }, ignore_index = True)
-    print(df_transform)
 print('Finished creating training set...')
 
 
@@ -129,13 +122,25 @@ avgCountsPneu = avgCountsPneu / countPenu
 
 plt.bar(np.arange(0,256), avgCountsNormal)
 plt.xlabel('Pixel Brightness')
-plt.ylabel('Count')
+plt.ylabel('Avg Count')
 plt.savefig('images/hist_normal')
 
 plt.clf()
 
 plt.bar(np.arange(0,256), avgCountsPneu)
 plt.xlabel('Pixel Brightness')
-plt.ylabel('Count')
+plt.ylabel('Avg Count')
 plt.savefig('images/hist_pmeumonia')
 print('Finished creating histograms...')
+
+plt.clf()
+
+print('Creating boxplots...')
+# for every explanatory variable, create boxplot
+for col in df_transform.columns:
+    if col not in ('img', 'label1', 'label2', 'label3'):
+        boxplot = df_transform.boxplot(by = 'label1', column = [col], grid = False)
+        plt.title(col)
+        plt.suptitle("")
+        plt.savefig('images/boxplot_' + col)
+print('Finished creating boxplots...')
