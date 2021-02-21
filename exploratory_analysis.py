@@ -98,12 +98,12 @@ for index, row in df_train.iterrows():
         'avgAboveMedian': np.mean(lightPixels),
         'avgBelowMedian': np.mean(darkPixels)
     }, ignore_index = True)
-print('Finished creating training set...')
+print('Finished creating training set')
 
 
 print('Creating histograms...')
 countNormal = 0
-countPenu = 0
+countPneu = 0
 
 avgCountsNormal = [0] * 256
 avgCountsPneu = [0] * 256
@@ -115,10 +115,10 @@ for index, row in df_transform.iterrows():
         countNormal += 1
     elif patientType == "Pnemonia":
         avgCountsPneu = avgCountsPneu + counts
-        countPenu += 1
+        countPneu += 1
 
 avgCountsNormal = avgCountsNormal / countNormal
-avgCountsPneu = avgCountsPneu / countPenu
+avgCountsPneu = avgCountsPneu / countPneu
 
 plt.bar(np.arange(0,256), avgCountsNormal)
 plt.xlabel('Pixel Brightness')
@@ -130,8 +130,15 @@ plt.clf()
 plt.bar(np.arange(0,256), avgCountsPneu)
 plt.xlabel('Pixel Brightness')
 plt.ylabel('Avg Count')
-plt.savefig('images/hist_pmeumonia')
-print('Finished creating histograms...')
+plt.savefig('images/hist_pneumonia')
+
+plt.clf()
+
+plt.bar(np.arange(0,256), avgCountsNormal, alpha=0.5, label='Normal')
+plt.bar(np.arange(0,256), avgCountsPneu, alpha=0.5, label='Pneumonia')
+plt.legend(loc='upper right')
+plt.savefig('images/hist_overlayed')
+print('Finished creating histograms')
 
 plt.clf()
 
@@ -143,4 +150,4 @@ for col in df_transform.columns:
         plt.title(col)
         plt.suptitle("")
         plt.savefig('images/boxplot_' + col)
-print('Finished creating boxplots...')
+print('Finished creating boxplots')
