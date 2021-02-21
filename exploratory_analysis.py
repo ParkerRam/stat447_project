@@ -87,10 +87,10 @@ for index, row in df_train.iterrows():
         'label1': row['Label'],
         'label2': row['Label_1_Virus_category'],
         'label3': row['Label_2_Virus_category'],
-        'avgBrightness': np.mean(imgr),
-        'lightestPixel': np.max(imgr),
+        'avgShade': np.mean(imgr),
+        'lightestShade': np.max(imgr),
         'numOfLightest': pixelCounts[np.max(imgr)],
-        'darkestPixel': np.min(imgr),
+        'darkestShade': np.min(imgr),
         'numOfDarkest': pixelCounts[np.min(imgr)],
         'numOfMedian': numMedian,
         'numAboveMedian': len(lightPixels),
@@ -121,14 +121,14 @@ avgCountsNormal = avgCountsNormal / countNormal
 avgCountsPneu = avgCountsPneu / countPneu
 
 plt.bar(np.arange(0,256), avgCountsNormal)
-plt.xlabel('Pixel Brightness')
+plt.xlabel('Pixel Shade')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_normal')
 
 plt.clf()
 
 plt.bar(np.arange(0,256), avgCountsPneu)
-plt.xlabel('Pixel Brightness')
+plt.xlabel('Pixel Shade')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_pneumonia')
 
