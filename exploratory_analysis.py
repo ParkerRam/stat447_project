@@ -9,6 +9,9 @@ from tensorflow.keras.preprocessing.image import load_img
 summary = pd.read_csv('data/Chest_xray_Corona_dataset_Summary.csv', index_col=0)
 df = pd.read_csv('data/Chest_xray_Corona_Metadata.csv', index_col=0)
 
+
+################################ Cleaning data #####################################
+
 # Remove Stress-Smoking, SARS, Strep rows since there are so little of them
 df = df[(df.Label_1_Virus_category != 'Stress-Smoking') &
         (df.Label_2_Virus_category != 'SARS') & 
@@ -22,12 +25,19 @@ count = 0
 for index, row in df.iterrows():
     if (row['Label_2_Virus_category'] == 'COVID-19') & (row['Dataset_type'] == 'TRAIN'):
         row['Dataset_type'] = 'TEST'
+        try:
+            os.rename('data/train/' + row['X_ray_image_name'], 'data/test/' + row['X_ray_image_name'])
+            print(row['X_ray_image_name'] + ' has been moved to TEST')
+        except:
+            print(row['X_ray_image_name'] + ' already moved')
         count += 1
     if count > 7:
         break
         
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
+
+################################ Example images #####################################
 
 # Create images directory
 try:
@@ -38,68 +48,82 @@ else:
     print ('Successfully created the directory')
 
 # Example x-ray of normal lung
-img_name = df_train.loc[df_train['Label'] == 'Normal'].iloc[0]['X_ray_image_name']
+img_name = df_train.loc[df_train['Label'] == 'Normal'].iloc[5]['X_ray_image_name']
 img_path = 'data/train/' + img_name
 load_img(img_path).save('images/normal.png')
 print('Image of normal lung saved to images/')
 
 # Example x-ray of virus lung
 img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') & 
-                       (df_train['Label_1_Virus_category'] == 'Virus')].iloc[0]['X_ray_image_name']
+                       (df_train['Label_1_Virus_category'] == 'Virus')].iloc[3]['X_ray_image_name']
 img_path = 'data/train/' + img_name
 load_img(img_path).save('images/virus.png')
 print('Image of virus lung saved to images/')
 
 # Example x-ray of bacteria lung
 img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') & 
-                       (df_train['Label_1_Virus_category'] == 'bacteria')].iloc[0]['X_ray_image_name']
+                       (df_train['Label_1_Virus_category'] == 'bacteria')].iloc[10]['X_ray_image_name']
 img_path = 'data/train/' + img_name
 load_img(img_path).save('images/bacteria.png')
 print('Image of bacteria lung saved to images/')
 
+################################ Transform data #####################################
 
-print('Creating training set...')
-df_transform = pd.DataFrame()
-
-# middle of grayscale, 127.5
 medianPixel = round(255 / 2)
-
-for index, row in df_train.iterrows():
-    img = cv2.imread('data/train/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-    imgr = cv2.resize(img, (200,200))
-
-    # for calculation of stats
-    unique, counts = np.unique(imgr, return_counts=True)
-    pixelCounts = dict(zip(unique, counts))
-
-    imgPixels = imgr.ravel()
-
-    # light if > median; dark if < median
-    lightPixels = imgPixels[imgPixels > medianPixel]
-    darkPixels = imgPixels[imgPixels < medianPixel]
+def transform_data(whichSet):
+    print('Creating ' + whichSet + ' set...')
     
-    numMedian = 0
-    if medianPixel in pixelCounts.keys():
-        numMedian = pixelCounts[medianPixel]
+    df_transform = pd.DataFrame()
+    
+    df = df_train if whichSet == 'train' else df_test
+    for index, row in df.iterrows():
+        img = cv2.imread('data/' + whichSet + '/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
+        try:
+            imgr = cv2.resize(img, (200,200))
+        except Exception as e:
+            print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
+            continue
 
-    df_transform = df_transform.append({
-        'img': imgr,
-        'label1': row['Label'],
-        'label2': row['Label_1_Virus_category'],
-        'label3': row['Label_2_Virus_category'],
-        'avgBrightness': np.mean(imgr),
-        'lightestPixel': np.max(imgr),
-        'numOfLightest': pixelCounts[np.max(imgr)],
-        'darkestPixel': np.min(imgr),
-        'numOfDarkest': pixelCounts[np.min(imgr)],
-        'numOfMedian': numMedian,
-        'numAboveMedian': len(lightPixels),
-        'numBelowMedian': len(darkPixels),
-        'avgAboveMedian': np.mean(lightPixels),
-        'avgBelowMedian': np.mean(darkPixels)
-    }, ignore_index = True)
-print('Finished creating training set')
+        # for calculation of stats
+        unique, counts = np.unique(imgr, return_counts=True)
+        pixelCounts = dict(zip(unique, counts))
 
+        imgPixels = imgr.ravel()
+
+        # light if > median; dark if < median
+        lightPixels = imgPixels[imgPixels > medianPixel]
+        darkPixels = imgPixels[imgPixels < medianPixel]
+
+        numMedian = 0
+        if medianPixel in pixelCounts.keys():
+            numMedian = pixelCounts[medianPixel]
+
+        df_transform = df_transform.append({
+            'img': imgr,
+            'label1': row['Label'],
+            'label2': row['Label_1_Virus_category'],
+            'label3': row['Label_2_Virus_category'],
+            'avgBrightness': np.mean(imgr),
+            'lightestPixel': np.max(imgr),
+            'numOfLightest': pixelCounts[np.max(imgr)],
+            'darkestPixel': np.min(imgr),
+            'numOfDarkest': pixelCounts[np.min(imgr)],
+            'numOfMedian': numMedian,
+            'numAboveMedian': len(lightPixels),
+            'numBelowMedian': len(darkPixels),
+            'avgAboveMedian': np.mean(lightPixels),
+            'avgBelowMedian': np.mean(darkPixels)
+        }, ignore_index = True)
+        
+    print('Finished creating ' + whichSet + ' set')
+    return df_transform
+
+train = transform_data('train')
+test = transform_data('test')
+train.to_pickle('data/train.pkl')
+test.to_pickle('data/test.pkl')
+
+################################ Exploratory analysis #####################################
 
 print('Creating histograms...')
 countNormal = 0
@@ -107,8 +131,8 @@ countPneu = 0
 
 avgCountsNormal = [0] * 256
 avgCountsPneu = [0] * 256
-for index, row in df_transform.iterrows():
-    counts, bins = np.histogram(df_transform.iloc[index]['img'].ravel(), 256, (0,255))
+for index, row in train.iterrows():
+    counts, bins = np.histogram(train.iloc[index]['img'].ravel(), 256, (0,255))
     patientType = row['label1']
     if patientType == "Normal":
         avgCountsNormal = avgCountsNormal + counts
@@ -144,9 +168,9 @@ plt.clf()
 
 print('Creating boxplots...')
 # for every explanatory variable, create boxplot
-for col in df_transform.columns:
+for col in train.columns:
     if col not in ('img', 'label1', 'label2', 'label3'):
-        boxplot = df_transform.boxplot(by = 'label1', column = [col], grid = False)
+        boxplot = train.boxplot(by = 'label1', column = [col], grid = False)
         plt.title(col)
         plt.suptitle("")
         plt.savefig('images/boxplot_' + col)
