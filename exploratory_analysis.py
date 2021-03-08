@@ -69,6 +69,8 @@ print('Image of bacteria lung saved to images/')
 
 ################################ Transform data #####################################
 
+PIXELS_RESIZE = 200
+
 medianPixel = round(255 / 2)
 def transform_data(whichSet):
     print('Creating ' + whichSet + ' set...')
@@ -79,7 +81,7 @@ def transform_data(whichSet):
     for index, row in df.iterrows():
         img = cv2.imread('data/' + whichSet + '/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
         try:
-            imgr = cv2.resize(img, (200,200))
+            imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
         except Exception as e:
             print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
             continue
@@ -104,6 +106,7 @@ def transform_data(whichSet):
             'label2': row['Label_1_Virus_category'],
             'label3': row['Label_2_Virus_category'],
             'avgShade': np.mean(imgr),
+            'avgShadeVar': np.var(imgr),
             'lightestShade': np.max(imgr),
             'numOfLightest': pixelCounts[np.max(imgr)],
             'darkestShade': np.min(imgr),
@@ -112,9 +115,10 @@ def transform_data(whichSet):
             'numAboveMedian': len(lightPixels),
             'numBelowMedian': len(darkPixels),
             'avgAboveMedian': np.mean(lightPixels),
-            'avgBelowMedian': np.mean(darkPixels)
+            'avgAboveMedianVar': np.var(lightPixels),
+            'avgBelowMedian': np.mean(darkPixels),
+            'avgBelowMedianVar': np.var(darkPixels)
         }, ignore_index = True)
-        
     print('Finished creating ' + whichSet + ' set')
     return df_transform
 
