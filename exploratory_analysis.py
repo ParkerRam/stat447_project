@@ -126,9 +126,9 @@ def transform_data(whichSet):
             'belowMedianAvg': np.mean(darkPixels),
             'belowMedianVar': np.var(darkPixels),
             'xbar': np.mean(xpos),
-            'x2var': np.var(np.mean(xpos, axis=1)),
+            'x2bar': np.var(xpos),
             'ybar': np.mean(ypos),
-            'y2var': np.var(np.mean(ypos, axis=0))
+            'y2bar': np.var(ypos)
         }, ignore_index = True)
     print('Finished creating ' + whichSet + ' set')
     return df_transform
