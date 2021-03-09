@@ -105,9 +105,9 @@ def transform_data(whichSet):
         # Find the sum of each row and column across the image
         sumOfCol = np.sum(imgr, axis=0)
         sumOfRow = np.sum(imgr, axis=1)        
-        x_pos = sumOfCol
+        x_pos = sumOfRow
         x2_pos = x_pos*x_pos
-        y_pos = sumOfRow
+        y_pos = sumOfCol
         y2_pos = y_pos*y_pos
 
         numMedian = 0
