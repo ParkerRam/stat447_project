@@ -102,13 +102,12 @@ def transform_data(whichSet):
                 xpos[x,y] = x*(imgr[x,y]/255)
                 ypos[x,y] = y*(imgr[x,y]/255)
         
-        # Find the sum of each row and column across the image
-        sumOfCol = np.sum(imgr, axis=0)
-        sumOfRow = np.sum(imgr, axis=1)        
-        x_pos = sumOfRow
-        x2_pos = x_pos*x_pos
-        y_pos = sumOfCol
-        y2_pos = y_pos*y_pos
+        x2ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+        xy2pos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+        for x in range(PIXELS_RESIZE):
+            for y in range(PIXELS_RESIZE):
+                x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
+                xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
 
         numMedian = 0
         if medianPixel in pixelCounts.keys():
@@ -136,8 +135,8 @@ def transform_data(whichSet):
             'x2bar': np.var(xpos),
             'ybar': np.mean(ypos),
             'y2bar': np.var(ypos),
-            'x2ybr': np.sum(x2_pos*y_pos*imgr/255),
-            'xy2br': np.sum(x_pos*y2_pos*imgr/255)
+            'x2ybr': np.sum(x2ypos),
+            'xy2br': np.sum(xy2pos)
         }, ignore_index = True)
     print('Finished creating ' + whichSet + ' set')
     return df_transform
