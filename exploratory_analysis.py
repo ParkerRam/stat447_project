@@ -68,10 +68,9 @@ load_img(img_path).save('images/bacteria.png')
 print('Image of bacteria lung saved to images/')
 
 ################################ Transform data #####################################
-
 PIXELS_RESIZE = 200
-
 medianPixel = round(255 / 2)
+
 def transform_data(whichSet):
     print('Creating ' + whichSet + ' set...')
     
@@ -95,7 +94,15 @@ def transform_data(whichSet):
         # light if > median; dark if < median
         lightPixels = imgPixels[imgPixels > medianPixel]
         darkPixels = imgPixels[imgPixels < medianPixel]
+        
+        xpos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+        ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+        for x in range(PIXELS_RESIZE):
+            for y in range(PIXELS_RESIZE):
+                xpos[x,y] = x*(imgr[x,y]/255)
+                ypos[x,y] = y*(imgr[x,y]/255)
 
+                
         numMedian = 0
         if medianPixel in pixelCounts.keys():
             numMedian = pixelCounts[medianPixel]
@@ -105,8 +112,8 @@ def transform_data(whichSet):
             'label1': row['Label'],
             'label2': row['Label_1_Virus_category'],
             'label3': row['Label_2_Virus_category'],
-            'avgShade': np.mean(imgr),
-            'avgShadeVar': np.var(imgr),
+            'shadeAvg': np.mean(imgr),
+            'shadeVar': np.var(imgr),
             'lightestShade': np.max(imgr),
             'numOfLightest': pixelCounts[np.max(imgr)],
             'darkestShade': np.min(imgr),
@@ -114,10 +121,14 @@ def transform_data(whichSet):
             'numOfMedian': numMedian,
             'numAboveMedian': len(lightPixels),
             'numBelowMedian': len(darkPixels),
-            'avgAboveMedian': np.mean(lightPixels),
-            'avgAboveMedianVar': np.var(lightPixels),
-            'avgBelowMedian': np.mean(darkPixels),
-            'avgBelowMedianVar': np.var(darkPixels)
+            'aboveMedianAvg': np.mean(lightPixels),
+            'aboveMedianVar': np.var(lightPixels),
+            'belowMedianAvg': np.mean(darkPixels),
+            'belowMedianVar': np.var(darkPixels),
+            'xbar': np.mean(xpos),
+            'x2var': np.var(np.mean(xpos, axis=1)),
+            'ybar': np.mean(ypos),
+            'y2var': np.var(np.mean(ypos, axis=0))
         }, ignore_index = True)
     print('Finished creating ' + whichSet + ' set')
     return df_transform
