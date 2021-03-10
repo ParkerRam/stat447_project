@@ -122,7 +122,7 @@ def transform_data(whichSet):
             numMedian = pixelCounts[medianPixel]
 
         df_transform = df_transform.append({
-            'img': np.round(imgr/255,4),
+            'img': imgr,
             'label1': row['Label'],
             'label2': row['Label_1_Virus_category'],
             'label3': row['Label_2_Virus_category'],
