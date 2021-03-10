@@ -97,27 +97,36 @@ def transform_data(whichSet):
         
         xpos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
         ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        for x in range(PIXELS_RESIZE):
-            for y in range(PIXELS_RESIZE):
-                xpos[x,y] = x*(imgr[x,y]/255)
-                ypos[x,y] = y*(imgr[x,y]/255)
-        
         x2ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
         xy2pos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
         for x in range(PIXELS_RESIZE):
             for y in range(PIXELS_RESIZE):
+                xpos[x,y] = x*(imgr[x,y]/255)
+                ypos[x,y] = y*(imgr[x,y]/255)
                 x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
                 xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
-
+                
+        allLabel = ''
+        if row['Label'] == 'Normal':
+            allLabel = 'Healthy'
+        elif row['Label_1_Virus_category'] == 'bacteria':
+            allLabel = 'Bacteria'
+        elif row['Label_2_Virus_category'] == 'COVID-19':
+            allLabel = 'COVID-19'
+        else:
+            allLabel = 'Other Virus'
+        
+        
         numMedian = 0
         if medianPixel in pixelCounts.keys():
             numMedian = pixelCounts[medianPixel]
 
         df_transform = df_transform.append({
-            'img': imgr,
+            'img': np.round(imgr/255,4),
             'label1': row['Label'],
             'label2': row['Label_1_Virus_category'],
             'label3': row['Label_2_Virus_category'],
+            'label4': allLabel,
             'shadeAvg': np.mean(imgr),
             'shadeVar': np.var(imgr),
             'lightestShade': np.max(imgr),
@@ -135,8 +144,8 @@ def transform_data(whichSet):
             'x2bar': np.var(xpos),
             'ybar': np.mean(ypos),
             'y2bar': np.var(ypos),
-            'x2ybr': np.sum(x2ypos),
-            'xy2br': np.sum(xy2pos)
+            'x2ybr': np.mean(x2ypos),
+            'xy2br': np.mean(xy2pos)
         }, ignore_index = True)
     print('Finished creating ' + whichSet + ' set')
     return df_transform
@@ -192,7 +201,7 @@ plt.clf()
 print('Creating boxplots...')
 # for every explanatory variable, create boxplot
 for col in train.columns:
-    if col not in ('img', 'label1', 'label2', 'label3'):
+    if col not in ('img', 'label1', 'label2', 'label3', 'label4'):
         boxplot = train.boxplot(by = 'label1', column = [col], grid = False)
         plt.title(col)
         plt.suptitle("")
