@@ -105,19 +105,9 @@ def transform_data(whichSet):
                 ypos[x,y] = y*(imgr[x,y]/255)
                 x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
                 xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
-        
-        
-        # this loop will throw a warning for trying to divide with 0, how do I handle that?
-        # if this loop exceeds 40 minutes, let me know! 
-        xybar = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        x_bar = np.mean(xpos)
-        y_bar = np.mean(ypos)
-        x2_bar = np.var(xpos)
-        y2_bar = np.var(ypos)
-        for x in range(PIXELS_RESIZE):
-            for y in range(PIXELS_RESIZE):
-                xybar = (np.mean(x*y)-(x_bar*y_bar)) /(np.std(x2_bar)*np.std(y2_bar))
 
+        n = 400000        
+        xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
          
         allLabel = ''
         if row['Label'] == 'Normal':
@@ -159,7 +149,7 @@ def transform_data(whichSet):
             'y2bar': np.var(ypos),
             'x2ybr': np.mean(x2ypos),
             'xy2br': np.mean(xy2pos),
-            'xybar': np.mean(xybar)
+            'xybar': xybar
         }, ignore_index = True)
     print('Finished creating ' + whichSet + ' set')
     return df_transform
