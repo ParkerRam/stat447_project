@@ -29,11 +29,12 @@ def oversampleCovid(df_train, k):
         frames.append(covid_df)
     df_oversampled_train = pd.concat(frames)
     covid_df = df_oversampled_train.loc[df_train['label4'] == "COVID-19"]
-    print("--> There are now " + str(len(covid_df)) + " rows with covid-19 labels. (done oversampling).")
+    print("\nThere are now " + str(len(covid_df)) + " rows with covid-19 labels. (done oversampling).")
     return df_oversampled_train
 
-def fitLogitReg(df_train, df_test):
-    df_oversampled_train = oversampleCovid(df_train, 6)
+# fit logit model (and oversampling that duplicated covid data k num of times) and predict
+def fitLogitReg(df_train, df_test, k):
+    df_oversampled_train = oversampleCovid(df_train, k)
     train = separateXandY(df_oversampled_train)
     test = separateXandY(df_test)
     x_train = train[0]
@@ -52,4 +53,5 @@ def fitLogitReg(df_train, df_test):
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
 
 # multinomial logistic regression with all features
-fitLogitReg(df_train, df_test)
+print("Logit with oversampling (duplicated 6 times)")
+fitLogitReg(df_train, df_test, 6)
