@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.linear_model import LogisticRegression
-from imblearn.over_sampling import SMOTE
 
 df_train = pd.read_pickle('data/train.pkl')
 df_test = pd.read_pickle('data/test.pkl')
