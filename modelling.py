@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 from sklearn.metrics import confusion_matrix, roc_auc_score
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.preprocessing import label_binarize
@@ -130,6 +130,44 @@ def randomForestFeatures(df_train):
     selected_feat= x_train.columns[(rf_select.get_support())]
     len(selected_feat)
     print(selected_feat)
+    
+def findRidgeFeatures(model, x_train, y_train):
+    features = x_train.columns.to_list()
+    x_train = x_train.to_numpy()
+    ridge_select = SelectFromModel(estimator=model).fit(x_train, y_train)
+    is_selected = ridge_select.get_support()
+    selectedFeatures = []
+    for index, feature in enumerate(features):
+        if is_selected[index]:
+            selectedFeatures.append(feature)
+    print("- selected subset: " + str(selectedFeatures))
+    return selectedFeatures
+    
+def fitRidgeClassifier(oversampled_train, df_test):
+    x_train, y_train = separateXandY(oversampled_train)
+    x_test, y_test = separateXandY(df_test)
+
+    classes = y_train['label4'].unique()
+
+    x_train_list = x_train.to_numpy()
+    y_train = y_train.to_numpy().ravel()
+    y_test = y_test.to_numpy()
+
+    model = RidgeClassifier(alpha=0.5)
+    fit = model.fit(x_train_list, y_train)
+    pred = fit.predict(x_test)
+    cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
+    print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
+
+    print("\nRidge Classifier subset")
+    selectedFeatures = findRidgeFeatures(model, x_train, y_train)
+    x_train_subset = x_train[selectedFeatures]
+    x_test_subset = x_test[selectedFeatures]
+    fit_subset = model.fit(x_train_subset.to_numpy(), y_train)
+    pred_subset = fit_subset.predict(x_test_subset)
+    cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
+    print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
+
 
 print("Perform Analysis")
 print(" --> Note: used oversampling - used proportion of difference between max and covid count\n")
@@ -141,4 +179,7 @@ fitLogitReg(df_oversampled_train, df_test)
 
 print("\nRandom Forest")
 fitRandomForest(df_train, df_test)
+
+print("\nRidge Classifier")
+fitRidgeClassifier(df_oversampled_train, df_test)
 
