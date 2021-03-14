@@ -118,6 +118,10 @@ def categoryPredInterval(probMatrix, labels):
 
     return pred50, pred80
 
+def contingencyMatrix(actual, pred):
+    return pd.DataFrame(pd.crosstab(actual, pred), index=['Bacteria', 'COVID-19', 'Healthy', 'Other Virus'])
+
+
 print("Oversample data:")
 df_oversampled_train = oversampleData(df_train)
 print("Perform Analysis:")
@@ -125,19 +129,34 @@ print("\nLogit Regression")
 testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000),
                                                      df_oversampled_train,
                                                      df_test)
-probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, df_oversampled_train['label4'].unique())
-probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, df_oversampled_train['label4'].unique())
+probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+
+matrixLogit50 = contingencyMatrix(df_test['label4'], np.asarray(probasLogit50))
+matrixLogit80 = contingencyMatrix(df_test['label4'], np.asarray(probasLogit80))
+matrixLogitSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub50))
+matrixLogitSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub80))
 
 print("\nRandom Forest")
 testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
                                                df_oversampled_train,
                                                df_test)
-probasRf50, probasRf80 = categoryPredInterval(testPredRf, df_oversampled_train['label4'].unique())
-probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, df_oversampled_train['label4'].unique())
+probasRf50, probasRf80 = categoryPredInterval(testPredRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+
+matrixRf50 = contingencyMatrix(df_test['label4'], np.asarray(probasRf50))
+matrixRf80 = contingencyMatrix(df_test['label4'], np.asarray(probasRf80))
+matrixRfSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasRfSub50))
+matrixRfSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasRfSub80))
 
 print("\nAda Boost")
 testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
                                                  df_oversampled_train,
                                                  df_test)
-probasAda50, probasAda80 = categoryPredInterval(testPredAda, df_oversampled_train['label4'].unique())
-probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, df_oversampled_train['label4'].unique())
+probasAda50, probasAda80 = categoryPredInterval(testPredAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+
+matrixAda50 = contingencyMatrix(df_test['label4'], np.asarray(probasAda50))
+matrixAda80 = contingencyMatrix(df_test['label4'], np.asarray(probasAda80))
+matrixAdaSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub50))
+matrixAdaSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub80))
