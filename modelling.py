@@ -88,23 +88,50 @@ def fitPredictModel(model, df_train, df_test):
     
     return probas, probas_subset
 
+def categoryPredInterval(probMatrix, labels):
+    n, k = probMatrix.shape
+    pred50 = arr_str = [''] * n
+    pred80 = arr_str = [''] * n
+
+    for i in range(n):
+        p = probMatrix[i,]
+        ip = np.argsort(p)
+        pOrdered = np.sort(p)
+        labelsOrdered = np.flip(labels[ip])
+        G = np.flip(np.cumsum(np.insert(pOrdered, 0, 0)))
+        k1 = np.min(np.where(G <= 0.5)[0])
+        k2 = np.min(np.where(G <= 0.2)[0])
+
+        pred1 = labelsOrdered[0:k1]
+        pred2 = labelsOrdered[0:k2]
+        
+        pred50[i] = '.'.join(pred1)
+        pred80[i] = '.'.join(pred2)
+
+    return pred50, pred80
+    
     
 print("Perform Analysis")
 print(" --> Note: used oversampling - used proportion of difference between max and covid count\n")
 df_oversampled_train = oversampleCovid(df_train)
 
 print("\nLogit Regression")
-fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000), 
-            df_oversampled_train,
-            df_test)
+testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000), 
+                                                     df_oversampled_train,
+                                                     df_test)
+probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, df_oversampled_train['label4'].unique())
+probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, df_oversampled_train['label4'].unique())
 
 print("\nRandom Forest")
-fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
-               df_oversampled_train,
-               df_test)
+testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
+                                               df_oversampled_train,
+                                               df_test)
+probasRf50, probasRf80 = categoryPredInterval(testPredRf, df_oversampled_train['label4'].unique())
+probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, df_oversampled_train['label4'].unique())
 
 print("\nAda Boost")
-testPred, testSubsetPred = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
-                                           df_oversampled_train,
-                                           df_test)
-
+testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
+                                                 df_oversampled_train,
+                                                 df_test)
+probasAda50, probasAda80 = categoryPredInterval(testPredAda, df_oversampled_train['label4'].unique())
+probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, df_oversampled_train['label4'].unique())
