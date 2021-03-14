@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
 import math
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.linear_model import LogisticRegression
-# import statsmodels.api as sm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
+from sklearn.preprocessing import label_binarize
 
 df_train = pd.read_pickle('data/train.pkl')
 df_test = pd.read_pickle('data/test.pkl')
@@ -42,41 +42,44 @@ def oversampleCovid(df_train):
     print("-> There are now " + str(len(covid_df)) + " rows with covid-19 labels. (done oversampling).")
     return df_oversampled_train
 
+# this chose vars: aboveMedianVar, belowMedianVar, numAboveMedian, numDarkest, numMedian, shadeVar, x2bar
+def findLogitFeatures(model, x_train, y_train):
+    features = x_train.columns.to_list()
+    x_train = x_train.to_numpy()
+    logit_select = SelectFromModel(estimator=model).fit(x_train, y_train)
+    is_selected = logit_select.get_support()
+    selectedFeatures = []
+    for index, feature in enumerate(features):
+        if is_selected[index]:
+            selectedFeatures.append(feature)
+    print("- selected subset: " + str(selectedFeatures))
+    return selectedFeatures
+
 # fit logit model with oversampling and predict
-def fitLogitReg(df_train, df_test):
-    df_oversampled_train = oversampleCovid(df_train)
-    train = separateXandY(df_oversampled_train)
-    test = separateXandY(df_test)
-    x_train = train[0]
-    y_train = train[1]
-    x_test = test[0]
-    y_test = test[1]
+def fitLogitReg(oversampled_train, df_test):
+    x_train, y_train = separateXandY(oversampled_train)
+    x_test, y_test = separateXandY(df_test)
 
     classes = y_train['label4'].unique()
-    x_train = x_train.to_numpy()
+
+    x_train_list = x_train.to_numpy()
     y_train = y_train.to_numpy().ravel()
     y_test = y_test.to_numpy()
 
-    fit = LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000).fit(x_train, y_train)
+    model = LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000)
+    fit = model.fit(x_train_list, y_train)
     pred = fit.predict(x_test)
     cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
 
-def findLogitRegSubset(df_train):
-    df_oversampled_train = oversampleCovid(df_train)
-    train = separateXandY(df_oversampled_train)
-    x_train = train[0]
-    y_train = train[1]
-    model = sm.mnlogit(endog=y_train, exog=x_train).fit()
-    print(model.summary())
-
-# multinomial logistic regression with all features
-print("Logit with oversampling - used proportion of difference between max and covid count")
-fitLogitReg(df_train, df_test)
-
-# TODO: fit logit reg w/ subset of features
-# subset = findLogitRegSubset(df_train)
-
+    print("\nLogit Reg subset")
+    selectedFeatures = findLogitFeatures(model, x_train, y_train)
+    x_train_subset = x_train[selectedFeatures]
+    x_test_subset = x_test[selectedFeatures]
+    fit_subset = model.fit(x_train_subset.to_numpy(), y_train)
+    pred_subset = fit_subset.predict(x_test_subset)
+    cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
+    print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
 
 def fitRandomForest(df_train, df_test):
     df_oversampled_train = oversampleCovid(df_train)
@@ -91,7 +94,7 @@ def fitRandomForest(df_train, df_test):
 
     y_train = y_train.values.ravel()
 
-    # create random forest 
+    # create random forest
     #rf = RandomForestClassifier()
     rf = RandomForestClassifier(n_estimators= 1400, max_depth= 220, max_features='auto')
     rf.fit(x_train, y_train)
@@ -106,12 +109,9 @@ def fitRandomForest(df_train, df_test):
 
     print("Random Forest Confusion Matrix")
     print(pd.DataFrame(rf_matrix, index=classes, columns=classes))
-    
-fitRandomForest(df_train, df_test)
-
 
 # Find best subset through feature selection
-# These were the features it picked: 
+# These were the features it picked:
 # 'aboveMedianVar', 'belowMedianVar', 'numOfDarkest', 'numOfLightest',
 # 'x2bar', 'x2ybr', 'xy2br'
 def randomForestFeatures(df_train):
@@ -125,9 +125,20 @@ def randomForestFeatures(df_train):
     rf_select = SelectFromModel(RandomForestClassifier(n_estimators=100))
     rf_select.fit(x_train, y_train)
 
-    ## To see which features are important on fitted model 
+    ## To see which features are important on fitted model
     rf_select.get_support()
     selected_feat= x_train.columns[(rf_select.get_support())]
     len(selected_feat)
     print(selected_feat)
+
+print("Perform Analysis")
+print(" --> Note: used oversampling - used proportion of difference between max and covid count\n")
+df_oversampled_train = oversampleCovid(df_train)
+
+# multinomial logistic regression with all features
+print("\nLogit Regression")
+fitLogitReg(df_oversampled_train, df_test)
+
+print("\nRandom Forest")
+fitRandomForest(df_train, df_test)
 
