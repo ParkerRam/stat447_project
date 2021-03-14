@@ -37,7 +37,6 @@ def oversampleCovid(df_train, k):
 def fitLogitReg(df_train, df_test, k):
     df_oversampled_train = oversampleData(df_train)
 
-    df_oversampled_train = oversampleCovid(df_train, k)
     train = separateXandY(df_oversampled_train)
     test = separateXandY(df_test)
     x_train = train[0]
