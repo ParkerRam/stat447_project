@@ -18,38 +18,46 @@ def separateXandY(df):
     y = df[['label4']]
     return x, y
 
-# duplicates covid 19 rows in given training dataset based on max count for labels
-# covid has 50 samples, and maxCount = 2350 (bacteria)
-def oversampleCovid(df_train):
+# duplicates rows in given training dataset based on max count for labels if count < maxCount
+# maxCount = 2350 (bacteria), so duplicates healthy, covid, and other virus
+def oversampleData(df_train):
     classes = df_train['label4'].unique()
-    covid_df = df_train.loc[df_train['label4'] == "COVID-19"]
-    covidCount = len(covid_df)
-    maxCount = 0
 
+    # find max count
+    print("- Before: there are " + str(len(df_train)) + " rows in training: ")
+    maxCount = 0
     for label in classes:
         count = len(df_train.loc[df_train['label4'] == label])
-        print(label + " has num of rows: " + str(count))
+        print("  --> " + label + " has num of rows: " + str(count))
         if count > maxCount:
             maxCount = count
-    k = math.floor((maxCount / covidCount))
 
-    print("\nOversampling by duplicating " + str(k) + " times: ")
-    frames = [df_train]
-    # duplicate covid rows k times
-    for i in range(1, k):
-        frames.append(covid_df)
-    df_oversampled_train = pd.concat(frames)
-    covid_df = df_oversampled_train.loc[df_oversampled_train['label4'] == "COVID-19"]
-    print("-> There are now " + str(len(covid_df)) + " rows with covid-19 labels. (done oversampling).")
+    df_oversampled_train = df_train
+    # oversample for each label
+    for label in classes:
+        label_df = df_train.loc[df_train['label4'] == label]
+        labelCount = len(label_df)
+        k = math.ceil((maxCount / labelCount))
+        frames = [df_oversampled_train]
+        # duplicate rows for given label, k times
+        for i in range(1, k):
+            frames.append(label_df)
+        df_oversampled_train = pd.concat(frames)
+
+    print("- After: there are now " + str(len(df_oversampled_train)) + " rows: ")
+    for label in classes:
+        count = len(df_oversampled_train.loc[df_oversampled_train['label4'] == label])
+        print("  --> " + label + " has num of rows: " + str(count))
+
     return df_oversampled_train
 
 def findModelFeatures(model, x_train, y_train):
     features = x_train.columns.to_list()
     x_train = x_train.to_numpy()
-    
+
     model_select = SelectFromModel(estimator=model).fit(x_train, y_train)
     is_selected = model_select.get_support()
-    
+
     selectedFeatures = []
     for index, feature in enumerate(features):
         if is_selected[index]:
@@ -109,14 +117,12 @@ def categoryPredInterval(probMatrix, labels):
         pred80[i] = '.'.join(pred2)
 
     return pred50, pred80
-    
-    
-print("Perform Analysis")
-print(" --> Note: used oversampling - used proportion of difference between max and covid count\n")
-df_oversampled_train = oversampleCovid(df_train)
 
+print("Oversample data:")
+df_oversampled_train = oversampleData(df_train)
+print("Perform Analysis:")
 print("\nLogit Regression")
-testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000), 
+testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000),
                                                      df_oversampled_train,
                                                      df_test)
 probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, df_oversampled_train['label4'].unique())
