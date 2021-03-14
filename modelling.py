@@ -28,9 +28,9 @@ def oversampleCovid(df_train):
         print(label + " has num of rows: " + str(count))
         if count > maxCount:
             maxCount = count
-    k = math.floor(((maxCount - covidCount) / covidCount) - 1)
+    k = math.floor((maxCount / covidCount))
 
-    print("Oversampling by duplicating " + str(k) + " times: ")
+    print("\nOversampling by duplicating " + str(k) + " times: ")
     frames = [df_train]
     # duplicate covid rows k times
     for i in range(1, k):
@@ -67,7 +67,6 @@ def findLogitRegSubset(df_train):
     y_train = train[1]
     model = sm.mnlogit(endog=y_train, exog=x_train).fit()
     print(model.summary())
-
 
 # multinomial logistic regression with all features
 print("Logit with oversampling - used proportion of difference between max and covid count")
