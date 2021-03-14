@@ -121,6 +121,25 @@ def categoryPredInterval(probMatrix, labels):
 def contingencyMatrix(actual, pred):
     return pd.DataFrame(pd.crosstab(actual, pred), index=['Bacteria', 'COVID-19', 'Healthy', 'Other Virus'])
 
+def coverage(table):
+    nclass, nsubset = table.shape
+    rowFreq = table.sum(axis=1)
+    labels = table.index
+    subsetLabels = table.columns
+    cover = np.zeros(nclass)
+    avgLen = np.zeros(nclass)
+    
+    for irow in range(nclass):
+        for icol in range(nsubset):
+            intervalSize = subsetLabels[icol].count('.') + 1
+            isCovered = subsetLabels[icol].count(labels[irow]) == 1
+            frequency = table[subsetLabels[icol]].values[irow]
+            cover[irow] = cover[irow] + frequency*isCovered
+            avgLen[irow] = avgLen[irow] + frequency*intervalSize
+    
+    miss = rowFreq - cover
+    avgLen = avgLen / rowFreq
+    return avgLen, miss, miss/rowFreq, cover/rowFreq
 
 print("Oversample data:")
 df_oversampled_train = oversampleData(df_train)
@@ -132,10 +151,10 @@ testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_cl
 probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
-matrixLogit50 = contingencyMatrix(df_test['label4'], np.asarray(probasLogit50))
-matrixLogit80 = contingencyMatrix(df_test['label4'], np.asarray(probasLogit80))
-matrixLogitSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub50))
-matrixLogitSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub80))
+scoresLogit50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogit50)))
+scoresLogit80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogit80)))
+scoresLogitSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub50)))
+scoresLogitSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub80)))
 
 print("\nRandom Forest")
 testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
@@ -144,10 +163,10 @@ testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimato
 probasRf50, probasRf80 = categoryPredInterval(testPredRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
-matrixRf50 = contingencyMatrix(df_test['label4'], np.asarray(probasRf50))
-matrixRf80 = contingencyMatrix(df_test['label4'], np.asarray(probasRf80))
-matrixRfSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasRfSub50))
-matrixRfSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasRfSub80))
+scoresRf50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRf50)))
+scoresRf80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRf80)))
+scoresRfSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRfSub50)))
+scoresRfSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRfSub80)))
 
 print("\nAda Boost")
 testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
@@ -156,7 +175,7 @@ testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimat
 probasAda50, probasAda80 = categoryPredInterval(testPredAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
-matrixAda50 = contingencyMatrix(df_test['label4'], np.asarray(probasAda50))
-matrixAda80 = contingencyMatrix(df_test['label4'], np.asarray(probasAda80))
-matrixAdaSub50 = contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub50))
-matrixAdaSub80 = contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub80))
+scoresAda50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda50)))
+scoresAda80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda80)))
+scoresAdaSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub50)))
+scoresAdaSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub80)))
