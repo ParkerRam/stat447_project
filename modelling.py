@@ -35,8 +35,7 @@ def oversampleCovid(df_train, k):
 
 # fit logit model (and oversampling that duplicated covid data k num of times) and predict
 def fitLogitReg(df_train, df_test, k):
-    df_oversampled_train = oversampleData(df_train)
-
+    df_oversampled_train = oversampleCovid(df_train, k)
     train = separateXandY(df_oversampled_train)
     test = separateXandY(df_test)
     x_train = train[0]
