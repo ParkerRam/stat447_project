@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.preprocessing import label_binarize
+import matplotlib.pyplot as plt
+from itertools import combinations
 
 df_train = pd.read_pickle('data/train.pkl')
 df_test = pd.read_pickle('data/test.pkl')
@@ -78,7 +80,7 @@ def fitPredictModel(model, df_train, df_test):
     fit = model.fit(x_train_np, y_train)
     pred = fit.predict(x_test)
     probas = fit.predict_proba(x_test)
-    
+
     cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
 
@@ -86,14 +88,14 @@ def fitPredictModel(model, df_train, df_test):
     selectedFeatures = findModelFeatures(model, x_train, y_train)
     x_train_subset = x_train[selectedFeatures]
     x_test_subset = x_test[selectedFeatures]
-    
+
     fit_subset = model.fit(x_train_subset.to_numpy(), y_train)
     pred_subset = fit_subset.predict(x_test_subset)
     probas_subset = fit_subset.predict_proba(x_test_subset)
-    
+
     cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
     print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
-    
+
     return probas, probas_subset
 
 def categoryPredInterval(probMatrix, labels):
@@ -112,7 +114,7 @@ def categoryPredInterval(probMatrix, labels):
 
         pred1 = labelsOrdered[0:k1]
         pred2 = labelsOrdered[0:k2]
-        
+
         pred50[i] = '.'.join(pred1)
         pred80[i] = '.'.join(pred2)
 
@@ -128,7 +130,7 @@ def coverage(table):
     subsetLabels = table.columns
     cover = np.zeros(nclass)
     avgLen = np.zeros(nclass)
-    
+
     for irow in range(nclass):
         for icol in range(nsubset):
             intervalSize = subsetLabels[icol].count('.') + 1
@@ -136,18 +138,32 @@ def coverage(table):
             frequency = table[subsetLabels[icol]].values[irow]
             cover[irow] = cover[irow] + frequency*isCovered
             avgLen[irow] = avgLen[irow] + frequency*intervalSize
-    
+
     miss = rowFreq - cover
     avgLen = avgLen / rowFreq
     return avgLen, miss, miss/rowFreq, cover/rowFreq
 
+def comparisonProbabilityPlot(method1, method2, pred1, pred2):
+    plt.scatter(np.asarray(pred1), np.asarray(pred2))
+    plt.title("Probability Comparison plot")
+    plt.xlabel(method1)
+    plt.ylabel(method2)
+    plt.savefig('images/compare/compare_' + method1 + '_' + method2)
+    plt.clf()
+
+
 print("Oversample data:")
 df_oversampled_train = oversampleData(df_train)
 print("Perform Analysis:")
+
+testPreds = {}
+
 print("\nLogit Regression")
 testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000),
                                                      df_oversampled_train,
                                                      df_test)
+testPreds["Logit"] = testPredLogit
+testPreds["Logit Subset"] = testPredSubsetLogit
 probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
@@ -160,6 +176,8 @@ print("\nRandom Forest")
 testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
                                                df_oversampled_train,
                                                df_test)
+testPreds["Random Forest"] = testPredRf
+testPreds["Random Forest Subset"] = testPredSubsetRf
 probasRf50, probasRf80 = categoryPredInterval(testPredRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
@@ -172,6 +190,8 @@ print("\nAda Boost")
 testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
                                                  df_oversampled_train,
                                                  df_test)
+testPreds["Ada Boost"] = testPredAda
+testPreds["Ada Boost Subset"] = testPredSubsetAda
 probasAda50, probasAda80 = categoryPredInterval(testPredAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
@@ -179,3 +199,13 @@ scoresAda50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda
 scoresAda80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda80)))
 scoresAdaSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub50)))
 scoresAdaSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub80)))
+
+# for each method, create comparison plots probabilities vs other method
+comparisons = combinations(testPreds.keys(), 2)
+for comparison in comparisons:
+    # print(comparison)
+    method1, method2 = comparison
+    pred1 = testPreds[method1]
+    pred2 = testPreds[method2]
+    comparisonProbabilityPlot(method1, method2, pred1, pred2)
+
