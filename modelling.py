@@ -164,13 +164,7 @@ testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_cl
                                                      df_test)
 testPreds["Logit"] = testPredLogit
 testPreds["Logit Subset"] = testPredSubsetLogit
-probasLogit50, probasLogit80 = categoryPredInterval(testPredLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
-probasLogitSub50, probasLogitSub80 = categoryPredInterval(testPredSubsetLogit, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
-scoresLogit50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogit50)))
-scoresLogit80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogit80)))
-scoresLogitSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub50)))
-scoresLogitSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasLogitSub80)))
 
 print("\nRandom Forest")
 testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
@@ -178,13 +172,7 @@ testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimato
                                                df_test)
 testPreds["Random Forest"] = testPredRf
 testPreds["Random Forest Subset"] = testPredSubsetRf
-probasRf50, probasRf80 = categoryPredInterval(testPredRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
-probasRfSub50, probasRfSub80 = categoryPredInterval(testPredSubsetRf, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
 
-scoresRf50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRf50)))
-scoresRf80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRf80)))
-scoresRfSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRfSub50)))
-scoresRfSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasRfSub80)))
 
 print("\nAda Boost")
 testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
@@ -192,13 +180,6 @@ testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimat
                                                  df_test)
 testPreds["Ada Boost"] = testPredAda
 testPreds["Ada Boost Subset"] = testPredSubsetAda
-probasAda50, probasAda80 = categoryPredInterval(testPredAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
-probasAdaSub50, probasAdaSub80 = categoryPredInterval(testPredSubsetAda, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
-
-scoresAda50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda50)))
-scoresAda80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAda80)))
-scoresAdaSub50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub50)))
-scoresAdaSub80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probasAdaSub80)))
 
 # for each method, create comparison plots probabilities vs other method
 comparisons = combinations(testPreds.keys(), 2)
@@ -208,4 +189,24 @@ for comparison in comparisons:
     pred1 = testPreds[method1]
     pred2 = testPreds[method2]
     comparisonProbabilityPlot(method1, method2, pred1, pred2)
+
+# calculate coverage scores for each method
+for method in testPreds.keys():
+    print("Coverage scores for " + method)
+    testPred = testPreds[method]
+    probs50, probs80 = categoryPredInterval(testPred, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
+    scores50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probs50)))
+    scores80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probs80)))
+    print(" - scores for 50% pred intervals:")
+    print(" --> Avg length:\n" + str(scores50[0]))
+    print(" --> Misclass:\n" + str(scores50[1]))
+    print(" --> Misclass Rate:\n" + str(scores50[2]))
+    print(" --> Coverage Rate:\n" + str(scores50[3]))
+
+    print("\n - scores for 50% pred intervals:")
+    print(" --> Avg length:\n" + str(scores80[0]))
+    print(" --> Misclass:\n" + str(scores80[1]))
+    print(" --> Misclass Rate:\n" + str(scores80[2]))
+    print(" --> Coverage Rate:\n" + str(scores80[3]))
+    print("\n")
 
