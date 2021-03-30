@@ -4,13 +4,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-
 from tensorflow.keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
 
 summary = pd.read_csv('data/Chest_xray_Corona_dataset_Summary.csv', index_col=0)
 df = pd.read_csv('data/Chest_xray_Corona_Metadata.csv', index_col=0)
-
 
 ################################ Cleaning data #####################################
 
@@ -53,36 +51,40 @@ for index, row in df.iterrows():
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
 
+df_train.to_pickle('data/train_metadata.pkl')
+df_test.to_pickle('data/test_metadata.pkl')
 
 ################################ Image Augmentation #####################################
-try:
-    shutil.rmtree("data/train_aug")
-except OSError:
-    print('Directory data/train_aug does not exist')
-os.mkdir('data/train_aug')
+train_datagen = ImageDataGenerator(featurewise_center=False,
+                                   samplewise_center=False, 
+                                   featurewise_std_normalization=False, 
+                                   samplewise_std_normalization=False, 
+                                   zca_whitening=False, 
+                                   rotation_range = 30,  
+                                   zoom_range = 0.2,
+                                   width_shift_range=0.1,  
+                                   height_shift_range=0.1,  
+                                   horizontal_flip = True, 
+                                   vertical_flip=False) 
 
-
-dataGen = ImageDataGenerator(featurewise_center=False,
-                              samplewise_center=False, 
-                              featurewise_std_normalization=False, 
-                              samplewise_std_normalization=False, 
-                              zca_whitening=False, 
-                              rotation_range = 30,  
-                              zoom_range = 0.2,
-                              width_shift_range=0.1,  
-                              height_shift_range=0.1,  
-                              horizontal_flip = True, 
-                              vertical_flip=False) 
+test_datagen = ImageDataGenerator()
 
 PIXELS_RESIZE = 200
-imageAugIter = dataGen.flow_from_dataframe(dataframe = df_train,
-                                           directory = 'data/train',
-                                           x_col = 'X_ray_image_name',
-                                           y_col = 'allLabel', 
-                                           target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
-                                           color_mode = 'grayscale',
-                                           class_mode = 'raw',
-                                           save_to_dir = 'data/train_aug')
+train_flow = train_datagen.flow_from_dataframe(dataframe = df_train,
+                                               directory = 'data/train',
+                                               x_col = 'X_ray_image_name',
+                                               y_col = 'allLabel', 
+                                               target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
+                                               color_mode = 'grayscale',
+                                               class_mode = 'raw')
+
+test_flow = test_datagen.flow_from_dataframe(dataframe = df_test,
+                                             directory = 'data/test',
+                                             x_col = 'X_ray_image_name',
+                                             y_col = 'allLabel', 
+                                             target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
+                                             color_mode = 'grayscale',
+                                             class_mode = 'raw')
 
 ################################ Transform data #####################################
 medianPixel = round(255 / 2)
@@ -108,7 +110,7 @@ def img_summary(imgr, label):
             x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
             xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
 
-    n = 400000        
+    n = PIXELS_RESIZE*PIXELS_RESIZE        
     xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
     
     numMedian = 0
@@ -118,12 +120,12 @@ def img_summary(imgr, label):
     summary_dict = {
         'img': imgr,
         'label': label,
-        'lung_status': 'Healthy' if label == 'Healthy' else 'Pneumonia',
-        'shadeAvg': np.mean(imgr),
-        'shadeVar': np.var(imgr),
-        'lightestShade': np.max(imgr),
+        'lungStatus': 'Healthy' if label == 'Healthy' else 'Pneumonia',
+        'grayToneAvg': np.mean(imgr),
+        'grayToneVar': np.var(imgr),
+        'lightestGrayTone': np.max(imgr),
         'numOfLightest': pixelCounts[np.max(imgr)],
-        'darkestShade': np.min(imgr),
+        'darkestGrayTone': np.min(imgr),
         'numOfDarkest': pixelCounts[np.min(imgr)],
         'numOfMedian': numMedian,
         'numAboveMedian': len(lightPixels),
@@ -142,14 +144,14 @@ def img_summary(imgr, label):
     }
     return summary_dict
 
-def transform_train(imageAugIter):
+def transform_data(imageAugIter, batch):
     print('Creating training set...')
     df_transform = pd.DataFrame()
 
     count = 0
     for x in imageAugIter:
         count = count + 1
-        if count > 300:
+        if count > batch:
             break
             
         images = x[0]
@@ -161,12 +163,12 @@ def transform_train(imageAugIter):
             df_transform = df_transform.append({
                 'img': summary_dict['img'],
                 'label': summary_dict['label'],
-                'lung_status': summary_dict['lung_status'],
-                'shadeAvg': summary_dict['shadeAvg'],
-                'shadeVar': summary_dict['shadeVar'],
-                'lightestShade': summary_dict['lightestShade'],
+                'lungStatus': summary_dict['lungStatus'],
+                'grayToneAvg': summary_dict['grayToneAvg'],
+                'grayToneVar': summary_dict['grayToneVar'],
+                'lightestGrayTone': summary_dict['lightestGrayTone'],
                 'numOfLightest': summary_dict['numOfLightest'],
-                'darkestShade': summary_dict['darkestShade'],
+                'darkestGrayTone': summary_dict['darkestGrayTone'],
                 'numOfDarkest': summary_dict['numOfDarkest'],
                 'numOfMedian': summary_dict['numOfMedian'],
                 'numAboveMedian': summary_dict['numAboveMedian'],
@@ -185,49 +187,49 @@ def transform_train(imageAugIter):
             }, ignore_index = True)
     return df_transform
 
-def transform_test(df):
-    print('Creating testing set...')
-    df_transform = pd.DataFrame()
+# def transform_test(df):
+#     print('Creating testing set...')
+#     df_transform = pd.DataFrame()
         
-    for index, row in df.iterrows():
-        img = cv2.imread('data/test/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-        try:
-            imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
-        except Exception as e:
-            print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
-            continue
+#     for index, row in df.iterrows():
+#         img = cv2.imread('data/test/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
+#         try:
+#             imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
+#         except Exception as e:
+#             print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
+#             continue
             
-        summary_dict = img_summary(img, row['allLabel'])
+#         summary_dict = img_summary(img, row['allLabel'])
 
-        df_transform = df_transform.append({
-            'img': summary_dict['img'],
-            'label': summary_dict['label'],
-            'lung_status': summary_dict['lung_status'],
-            'shadeAvg': summary_dict['shadeAvg'],
-            'shadeVar': summary_dict['shadeVar'],
-            'lightestShade': summary_dict['lightestShade'],
-            'numOfLightest': summary_dict['numOfLightest'],
-            'darkestShade': summary_dict['darkestShade'],
-            'numOfDarkest': summary_dict['numOfDarkest'],
-            'numOfMedian': summary_dict['numOfMedian'],
-            'numAboveMedian': summary_dict['numAboveMedian'],
-            'numBelowMedian': summary_dict['numBelowMedian'],
-            'aboveMedianAvg': summary_dict['aboveMedianAvg'],
-            'aboveMedianVar': summary_dict['aboveMedianVar'],
-            'belowMedianAvg': summary_dict['belowMedianAvg'],
-            'belowMedianVar': summary_dict['belowMedianVar'],
-            'xbar': summary_dict['xbar'],
-            'x2bar': summary_dict['x2bar'],
-            'ybar': summary_dict['ybar'],
-            'y2bar': summary_dict['y2bar'],
-            'x2ybr': summary_dict['x2ybr'],
-            'xy2br': summary_dict['xy2br'],
-            'xybar': summary_dict['xybar'],
-        }, ignore_index = True)
-    return df_transform
+#         df_transform = df_transform.append({
+#             'img': summary_dict['img'],
+#             'label': summary_dict['label'],
+#             'lung_status': summary_dict['lung_status'],
+#             'shadeAvg': summary_dict['shadeAvg'],
+#             'shadeVar': summary_dict['shadeVar'],
+#             'lightestShade': summary_dict['lightestShade'],
+#             'numOfLightest': summary_dict['numOfLightest'],
+#             'darkestShade': summary_dict['darkestShade'],
+#             'numOfDarkest': summary_dict['numOfDarkest'],
+#             'numOfMedian': summary_dict['numOfMedian'],
+#             'numAboveMedian': summary_dict['numAboveMedian'],
+#             'numBelowMedian': summary_dict['numBelowMedian'],
+#             'aboveMedianAvg': summary_dict['aboveMedianAvg'],
+#             'aboveMedianVar': summary_dict['aboveMedianVar'],
+#             'belowMedianAvg': summary_dict['belowMedianAvg'],
+#             'belowMedianVar': summary_dict['belowMedianVar'],
+#             'xbar': summary_dict['xbar'],
+#             'x2bar': summary_dict['x2bar'],
+#             'ybar': summary_dict['ybar'],
+#             'y2bar': summary_dict['y2bar'],
+#             'x2ybr': summary_dict['x2ybr'],
+#             'xy2br': summary_dict['xy2br'],
+#             'xybar': summary_dict['xybar'],
+#         }, ignore_index = True)
+#     return df_transform
 
-train = transform_train(imageAugIter)
-test = transform_test(df_test)
+train = transform_data(train_flow, 300)
+test = transform_data(test_flow, 19)
 train.to_pickle('data/train.pkl')
 test.to_pickle('data/test.pkl')
 
@@ -277,7 +279,7 @@ avgCountsNormal = [0] * 256
 avgCountsPneu = [0] * 256
 for index, row in train.iterrows():
     counts, bins = np.histogram(train.iloc[index]['img'].ravel(), 256, (0,255))
-    patientType = row['lung_status']
+    patientType = row['lungStatus']
     if patientType == "Healthy":
         avgCountsNormal = avgCountsNormal + counts
         countNormal += 1
@@ -289,14 +291,14 @@ avgCountsNormal = avgCountsNormal / countNormal
 avgCountsPneu = avgCountsPneu / countPneu
 
 plt.bar(np.arange(0,256), avgCountsNormal)
-plt.xlabel('Pixel Shade')
+plt.xlabel('Pixel Gray Tone')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_normal')
 
 plt.clf()
 
 plt.bar(np.arange(0,256), avgCountsPneu)
-plt.xlabel('Pixel Shade')
+plt.xlabel('Pixel Gray Tone')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_pneumonia')
 
@@ -313,8 +315,8 @@ plt.clf()
 print('Creating boxplots...')
 # for every explanatory variable, create boxplot
 for col in train.columns:
-    if col not in ('img', 'label', 'lung_status'):
-        boxplot = train.boxplot(by = 'lung_status', column = [col], grid = False)
+    if col not in ('img', 'label', 'lungStatus'):
+        boxplot = train.boxplot(by = 'lungStatus', column = [col], grid = False)
         plt.title(col)
         plt.suptitle("")
         plt.savefig('images/boxplot_' + col)

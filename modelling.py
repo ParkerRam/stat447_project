@@ -13,7 +13,7 @@ df_test = pd.read_pickle('data/test.pkl')
 
 # separates explanatory and response into 2 dataframes
 def separateXandY(df):
-    features = list(filter(lambda k: ('label' not in k and 'img' not in k and 'lung_status' not in k), df.columns))
+    features = list(filter(lambda k: ('label' not in k and 'img' not in k and 'lungStatus' not in k), df.columns))
     x = df[features]
     y = df[['label']]
     return x, y
