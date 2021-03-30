@@ -136,19 +136,19 @@ print("Perform Analysis:")
 
 testPreds = {}
 
-# print("\nLogit Regression")
-# best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
-#                               {
-#                                   'penalty': ['l2'],
-#                                   'C': [1.0]
-#                               },
-#                               df_train,
-#                               df_test)
-# testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
-#                                                      df_train,
-#                                                      df_test)
-# testPreds["Logit"] = testPredLogit
-# testPreds["Logit Subset"] = testPredSubsetLogit
+print("\nLogit Regression")
+best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
+                              {
+                                  'penalty': ['l2'],
+                                  'C': [1.0]
+                              },
+                              df_train,
+                              df_test)
+testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
+                                                     df_train,
+                                                     df_test)
+testPreds["Logit"] = testPredLogit
+testPreds["Logit Subset"] = testPredSubsetLogit
 
 
 print("\nRandom Forest")
