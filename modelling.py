@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import SelectFromModel
@@ -41,9 +41,15 @@ def fitPredictModel(model, df_train, df_test):
     y_train = y_train.to_numpy().ravel()
     y_test = y_test.to_numpy().ravel()
 
+    print('\nModel using all features')
     pred = model.predict(x_test)
     probas = model.predict_proba(x_test)
-
+    f1score = f1_scores(y_test, pred)
+    print('\nF1-Scores for Bacteria, COVID-19, Healthy, Other Virus')
+    print(f1score[2])
+    print('Supports for Bacteria, COVID-19, Healthy, Other Virus')
+    print(f1score[3], '\n')
+    
     cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
 
@@ -55,9 +61,15 @@ def fitPredictModel(model, df_train, df_test):
     fit_subset = model.fit(x_train_subset.to_numpy(), y_train)
     pred_subset = fit_subset.predict(x_test_subset)
     probas_subset = fit_subset.predict_proba(x_test_subset)
+    f1score_subset = f1_scores(y_test, pred_subset)
+    print('\nF1-Scores for Bacteria, COVID-19, Healthy, Other Virus')
+    print(f1score_subset[2])
+    print('Supports for Bacteria, COVID-19, Healthy, Other Virus')
+    print(f1score_subset[3], '\n')
+
 
     cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
-    print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
+    print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes), '\n')
 
     return probas, probas_subset
 
@@ -69,7 +81,7 @@ def hyperparamTuning(model, params_grid, df_train):
     grid_search = GridSearchCV(estimator=model, param_grid=params_grid, cv=4, scoring='roc_auc_ovr', refit=True)
     grid_result = grid_search.fit(x_train_np, y_train)
 
-    print("Best: " + str(grid_result.best_score_) + " using " + str(grid_result.best_params_))
+    print("Best AUC: " + str(grid_result.best_score_) + " using " + str(grid_result.best_params_))
     
     return grid_result.best_estimator_
 
@@ -128,30 +140,8 @@ def comparisonProbabilityPlot(method1, method2, pred1, pred2):
     
 # works but a lot of warnings (Not sure how to solve it)
 # It does calculate sensitivity and f1 scores
-def f1_scores(model, df_test):
-    
-    x_train, y_train = separateXandY(df_train)
-    x_test, y_test = separateXandY(df_test)
-    y_test = y_test.to_numpy().ravel()
-
-    models = model().fit(x_train, y_train)
-    pred = models.predict(x_test)
-
-    #f1_s = f1_score(y_test, pred, average='weighted')
-
-    # gives precision, sensitivity/recall, f1-score, support
-    report = classification_report(y_test, pred)
-
-    #return f1_s
-    return report
-
-f1_LR = f1_scores(LogisticRegression, df_test)
-f1_Ada = f1_scores(AdaBoostClassifier, df_test)
-f1_rf = f1_scores(RandomForestClassifier, df_test)
-
-print("summary LR :\n", f1_LR)
-print("summary Ada :\n", f1_Ada)
-print("summary RF :\n", f1_rf)
+def f1_scores(actual, pred):
+    return precision_recall_fscore_support(actual, pred)
 
 
 print("Perform Analysis:")
@@ -175,12 +165,8 @@ testPreds["Logit Subset"] = testPredSubsetLogit
 print("\nRandom Forest")
 best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
                           {
-                              'bootstrap': [True, False],
-                              'n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
-                              'max_features': ['auto', 'sqrt'],
-                              'min_samples_leaf': [1, 2, 4],
-                              'min_samples_split': [2, 5, 10],
-                              'max_depth':[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None]
+                              'n_estimators': [200, 400, 1000, 1400],
+                              'max_depth':[10, 20, 30, None]
                           },
                           df_train)
 testPredRf, testPredSubsetRf = fitPredictModel(best_rf,

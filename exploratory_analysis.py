@@ -145,7 +145,7 @@ def img_summary(imgr, label):
     return summary_dict
 
 def transform_data(imageAugIter, batch):
-    print('Creating training set...')
+    print('Creating set...')
     df_transform = pd.DataFrame()
 
     count = 0
