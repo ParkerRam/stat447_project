@@ -6,6 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_selection import SelectFromModel
+from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 from itertools import combinations
@@ -64,6 +65,46 @@ def fitPredictModel(model, df_train, df_test):
     print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
 
     return probas, probas_subset
+
+def hyperparamTuning(model, df_train, df_test):
+    x_train, y_train = separateXandY(df_train)
+    x_test, y_test = separateXandY(df_test)
+
+    classes = y_train['label'].unique()
+
+    x_train_np = x_train.to_numpy()
+    y_train = y_train.to_numpy().ravel()
+    y_test = y_test.to_numpy().ravel()
+
+    penalty = ['l2']        # maybe 'l1' ?
+    c_values = [1.0]        # maybe add values: 1000, 100, 10 ?
+
+    # define grid search
+    grid = dict(penalty=penalty,C=c_values)
+    cv = RepeatedStratifiedKFold(n_splits=4, n_repeats=1, random_state=1)
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=cv, scoring='roc_auc_ovr')
+    grid_result = grid_search.fit(x_train_np, y_train)
+
+    print("Best: " + str(grid_result.best_score_) + " using " + str(grid_result.best_params_))
+
+    # TODO: predictions - to test this
+    # pred = grid_result.predict(x_test)
+    # probas = grid_result.predict_proba(x_test)
+    #
+    # cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
+    # print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
+    #
+    # print("\nModel using subset of features")
+    # selectedFeatures = findModelFeatures(model, x_train, y_train)
+    # x_train_subset = x_train[selectedFeatures]
+    # x_test_subset = x_test[selectedFeatures]
+    #
+    # fit_subset = grid_search.fit(x_train_subset.to_numpy(), y_train)
+    # pred_subset = fit_subset.predict(x_test_subset)
+    # probas_subset = fit_subset.predict_proba(x_test_subset)
+    #
+    # cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
+    # print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
 
 def categoryPredInterval(probMatrix, labels):
     n, k = probMatrix.shape
@@ -127,6 +168,9 @@ print("\nLogit Regression")
 testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', max_iter = 1000000, class_weight = 'balanced'),
                                                      df_train,
                                                      df_test)
+hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
+                                        df_train,
+                                        df_test)
 testPreds["Logit"] = testPredLogit
 testPreds["Logit Subset"] = testPredSubsetLogit
 
@@ -174,4 +218,3 @@ for method in testPreds.keys():
     print(" --> Misclass Rate:\n" + str(scores80[2]))
     print(" --> Coverage Rate:\n" + str(scores80[3]))
     print("\n")
-
