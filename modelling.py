@@ -41,13 +41,11 @@ def fitPredictModel(model, df_train, df_test):
 
     classes = y_train['label'].unique()
 
-    x_train_np = x_train.to_numpy()
     y_train = y_train.to_numpy().ravel()
     y_test = y_test.to_numpy().ravel()
 
-    fit = model.fit(x_train_np, y_train)
-    pred = fit.predict(x_test)
-    probas = fit.predict_proba(x_test)
+    pred = model.predict(x_test)
+    probas = model.predict_proba(x_test)
 
     cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
@@ -66,7 +64,7 @@ def fitPredictModel(model, df_train, df_test):
 
     return probas, probas_subset
 
-def hyperparamTuning(model, df_train, df_test):
+def hyperparamTuning(model, params_grid, df_train, df_test):
     x_train, y_train = separateXandY(df_train)
     x_test, y_test = separateXandY(df_test)
 
@@ -76,35 +74,12 @@ def hyperparamTuning(model, df_train, df_test):
     y_train = y_train.to_numpy().ravel()
     y_test = y_test.to_numpy().ravel()
 
-    penalty = ['l2']        # maybe 'l1' ?
-    c_values = [1.0]        # maybe add values: 1000, 100, 10 ?
-
-    # define grid search
-    grid = dict(penalty=penalty,C=c_values)
-    cv = RepeatedStratifiedKFold(n_splits=4, n_repeats=1, random_state=1)
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=cv, scoring='roc_auc_ovr')
+    grid_search = GridSearchCV(estimator=model, param_grid=params_grid, cv=4, scoring='roc_auc_ovr', refit=True)
     grid_result = grid_search.fit(x_train_np, y_train)
 
     print("Best: " + str(grid_result.best_score_) + " using " + str(grid_result.best_params_))
-
-    # TODO: predictions - to test this
-    # pred = grid_result.predict(x_test)
-    # probas = grid_result.predict_proba(x_test)
-    #
-    # cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
-    # print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
-    #
-    # print("\nModel using subset of features")
-    # selectedFeatures = findModelFeatures(model, x_train, y_train)
-    # x_train_subset = x_train[selectedFeatures]
-    # x_test_subset = x_test[selectedFeatures]
-    #
-    # fit_subset = grid_search.fit(x_train_subset.to_numpy(), y_train)
-    # pred_subset = fit_subset.predict(x_test_subset)
-    # probas_subset = fit_subset.predict_proba(x_test_subset)
-    #
-    # cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
-    # print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes))
+    
+    return grid_result.best_estimator_
 
 def categoryPredInterval(probMatrix, labels):
     n, k = probMatrix.shape
@@ -165,30 +140,34 @@ print("Perform Analysis:")
 testPreds = {}
 
 print("\nLogit Regression")
-testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', max_iter = 1000000, class_weight = 'balanced'),
+best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
+                              {
+                                  'penalty': ['l2'],
+                                  'C': [1.0]
+                              },
+                              df_train,
+                              df_test)
+testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
                                                      df_train,
                                                      df_test)
-hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
-                                        df_train,
-                                        df_test)
 testPreds["Logit"] = testPredLogit
 testPreds["Logit Subset"] = testPredSubsetLogit
 
 
-print("\nRandom Forest")
-testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto', class_weight = 'balanced'),
-                                               df_train,
-                                               df_test)
-testPreds["Random Forest"] = testPredRf
-testPreds["Random Forest Subset"] = testPredSubsetRf
+# print("\nRandom Forest")
+# testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto', class_weight = 'balanced'),
+#                                                df_train,
+#                                                df_test)
+# testPreds["Random Forest"] = testPredRf
+# testPreds["Random Forest Subset"] = testPredSubsetRf
 
 
-print("\nAda Boost")
-testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(),
-                                                 df_train,
-                                                 df_test)
-testPreds["Ada Boost"] = testPredAda
-testPreds["Ada Boost Subset"] = testPredSubsetAda
+# print("\nAda Boost")
+# testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(),
+#                                                  df_train,
+#                                                  df_test)
+# testPreds["Ada Boost"] = testPredAda
+# testPreds["Ada Boost Subset"] = testPredSubsetAda
 
 # for each method, create comparison plots probabilities vs other method
 comparisons = combinations(testPreds.keys(), 2)
@@ -201,7 +180,7 @@ for comparison in comparisons:
 
 # calculate coverage scores for each method
 for method in testPreds.keys():
-    print("Coverage scores for " + method)
+    print("Scores for " + method)
     testPred = testPreds[method]
     probs50, probs80 = categoryPredInterval(testPred, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
     scores50 = coverage(contingencyMatrix(df_test['label'], np.asarray(probs50)))
