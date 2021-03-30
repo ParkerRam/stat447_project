@@ -61,15 +61,10 @@ def fitPredictModel(model, df_train, df_test):
 
     return probas, probas_subset
 
-def hyperparamTuning(model, params_grid, df_train, df_test):
+def hyperparamTuning(model, params_grid, df_train):
     x_train, y_train = separateXandY(df_train)
-    x_test, y_test = separateXandY(df_test)
-
-    classes = y_train['label'].unique()
-
     x_train_np = x_train.to_numpy()
     y_train = y_train.to_numpy().ravel()
-    y_test = y_test.to_numpy().ravel()
 
     grid_search = GridSearchCV(estimator=model, param_grid=params_grid, cv=4, scoring='roc_auc_ovr', refit=True)
     grid_result = grid_search.fit(x_train_np, y_train)
@@ -167,10 +162,9 @@ print("\nLogit Regression")
 best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
                               {
                                   'penalty': ['l2'],
-                                  'C': [1.0]
+                                  'C': [1.0, 10]
                               },
-                              df_train,
-                              df_test)
+                              df_train)
 testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
                                                      df_train,
                                                      df_test)
@@ -188,8 +182,7 @@ best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
                               'min_samples_split': [2, 5, 10],
                               'max_depth':[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None]
                           },
-                          df_train,
-                          df_test)
+                          df_train)
 testPredRf, testPredSubsetRf = fitPredictModel(best_rf,
                                                df_train,
                                                df_test)
@@ -202,8 +195,7 @@ best_ada = hyperparamTuning(AdaBoostClassifier(),
                            {
                                'n_estimators': [50,100,500,1000]
                            },
-                           df_train,
-                           df_test)
+                           df_train)
 testPredAda, testPredSubsetAda = fitPredictModel(best_ada,
                                                  df_train,
                                                  df_test)
