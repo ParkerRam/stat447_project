@@ -15,43 +15,10 @@ df_test = pd.read_pickle('data/test.pkl')
 
 # separates explanatory and response into 2 dataframes
 def separateXandY(df):
-    features = list(filter(lambda k: ('label' not in k and 'img' not in k), df.columns))
+    features = list(filter(lambda k: ('label' not in k and 'img' not in k and 'lung_status' not in k), df.columns))
     x = df[features]
-    y = df[['label4']]
+    y = df[['label']]
     return x, y
-
-# duplicates rows in given training dataset based on max count for labels if count < maxCount
-# maxCount = 2350 (bacteria), so duplicates healthy, covid, and other virus
-def oversampleData(df_train):
-    classes = df_train['label4'].unique()
-
-    # find max count
-    print("- Before: there are " + str(len(df_train)) + " rows in training: ")
-    maxCount = 0
-    for label in classes:
-        count = len(df_train.loc[df_train['label4'] == label])
-        print("  --> " + label + " has num of rows: " + str(count))
-        if count > maxCount:
-            maxCount = count
-
-    df_oversampled_train = df_train
-    # oversample for each label
-    for label in classes:
-        label_df = df_train.loc[df_train['label4'] == label]
-        labelCount = len(label_df)
-        k = math.ceil((maxCount / labelCount))
-        frames = [df_oversampled_train]
-        # duplicate rows for given label, k times
-        for i in range(1, k):
-            frames.append(label_df)
-        df_oversampled_train = pd.concat(frames)
-
-    print("- After: there are now " + str(len(df_oversampled_train)) + " rows: ")
-    for label in classes:
-        count = len(df_oversampled_train.loc[df_oversampled_train['label4'] == label])
-        print("  --> " + label + " has num of rows: " + str(count))
-
-    return df_oversampled_train
 
 def findModelFeatures(model, x_train, y_train):
     features = x_train.columns.to_list()
@@ -71,7 +38,7 @@ def fitPredictModel(model, df_train, df_test):
     x_train, y_train = separateXandY(df_train)
     x_test, y_test = separateXandY(df_test)
 
-    classes = y_train['label4'].unique()
+    classes = y_train['label'].unique()
 
     x_train_np = x_train.to_numpy()
     y_train = y_train.to_numpy().ravel()
@@ -152,31 +119,29 @@ def comparisonProbabilityPlot(method1, method2, pred1, pred2):
     plt.clf()
 
 
-print("Oversample data:")
-df_oversampled_train = oversampleData(df_train)
 print("Perform Analysis:")
 
 testPreds = {}
 
 print("\nLogit Regression")
-testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', solver='saga', max_iter=10000),
-                                                     df_oversampled_train,
+testPredLogit, testPredSubsetLogit = fitPredictModel(LogisticRegression(multi_class='multinomial', max_iter = 1000000, class_weight = 'balanced'),
+                                                     df_train,
                                                      df_test)
 testPreds["Logit"] = testPredLogit
 testPreds["Logit Subset"] = testPredSubsetLogit
 
 
 print("\nRandom Forest")
-testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto'),
-                                               df_oversampled_train,
+testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto', class_weight = 'balanced'),
+                                               df_train,
                                                df_test)
 testPreds["Random Forest"] = testPredRf
 testPreds["Random Forest Subset"] = testPredSubsetRf
 
 
 print("\nAda Boost")
-testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto')),
-                                                 df_oversampled_train,
+testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(),
+                                                 df_train,
                                                  df_test)
 testPreds["Ada Boost"] = testPredAda
 testPreds["Ada Boost Subset"] = testPredSubsetAda
@@ -195,15 +160,15 @@ for method in testPreds.keys():
     print("Coverage scores for " + method)
     testPred = testPreds[method]
     probs50, probs80 = categoryPredInterval(testPred, np.asarray(['Bacteria', 'COVID-19', 'Healthy', 'Other Virus']))
-    scores50 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probs50)))
-    scores80 = coverage(contingencyMatrix(df_test['label4'], np.asarray(probs80)))
+    scores50 = coverage(contingencyMatrix(df_test['label'], np.asarray(probs50)))
+    scores80 = coverage(contingencyMatrix(df_test['label'], np.asarray(probs80)))
     print(" - scores for 50% pred intervals:")
     print(" --> Avg length:\n" + str(scores50[0]))
     print(" --> Misclass:\n" + str(scores50[1]))
     print(" --> Misclass Rate:\n" + str(scores50[2]))
     print(" --> Coverage Rate:\n" + str(scores50[3]))
 
-    print("\n - scores for 50% pred intervals:")
+    print("\n - scores for 80% pred intervals:")
     print(" --> Avg length:\n" + str(scores80[0]))
     print(" --> Misclass:\n" + str(scores80[1]))
     print(" --> Misclass Rate:\n" + str(scores80[2]))

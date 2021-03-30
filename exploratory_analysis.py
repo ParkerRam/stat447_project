@@ -1,10 +1,12 @@
 import os
+import shutil
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
 from tensorflow.keras.preprocessing.image import load_img
+from keras.preprocessing.image import ImageDataGenerator
 
 summary = pd.read_csv('data/Chest_xray_Corona_dataset_Summary.csv', index_col=0)
 df = pd.read_csv('data/Chest_xray_Corona_Metadata.csv', index_col=0)
@@ -33,9 +35,207 @@ for index, row in df.iterrows():
         count += 1
     if count > 7:
         break
+
+# Create multinomial label     
+for index, row in df.iterrows():
+    allLabel = ''
+    if row['Label'] == 'Normal':
+        allLabel = 'Healthy'
+    elif row['Label_1_Virus_category'] == 'bacteria':
+        allLabel = 'Bacteria'
+    elif row['Label_2_Virus_category'] == 'COVID-19':
+        allLabel = 'COVID-19'
+    else:
+        allLabel = 'Other Virus'
         
+    df.at[index, 'allLabel'] = allLabel
+    
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
+
+
+################################ Image Augmentation #####################################
+try:
+    shutil.rmtree("data/train_aug")
+except OSError:
+    print('Directory data/train_aug does not exist')
+os.mkdir('data/train_aug')
+
+
+dataGen = ImageDataGenerator(featurewise_center=False,
+                              samplewise_center=False, 
+                              featurewise_std_normalization=False, 
+                              samplewise_std_normalization=False, 
+                              zca_whitening=False, 
+                              rotation_range = 30,  
+                              zoom_range = 0.2,
+                              width_shift_range=0.1,  
+                              height_shift_range=0.1,  
+                              horizontal_flip = True, 
+                              vertical_flip=False) 
+
+PIXELS_RESIZE = 200
+imageAugIter = dataGen.flow_from_dataframe(dataframe = df_train,
+                                           directory = 'data/train',
+                                           x_col = 'X_ray_image_name',
+                                           y_col = 'allLabel', 
+                                           target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
+                                           color_mode = 'grayscale',
+                                           class_mode = 'raw',
+                                           save_to_dir = 'data/train_aug')
+
+################################ Transform data #####################################
+medianPixel = round(255 / 2)
+def img_summary(imgr, label):
+    # for calculation of stats
+    unique, counts = np.unique(imgr, return_counts=True)
+    pixelCounts = dict(zip(unique, counts))
+
+    imgPixels = imgr.ravel()
+
+    # light if > median; dark if < median
+    lightPixels = imgPixels[imgPixels > medianPixel]
+    darkPixels = imgPixels[imgPixels < medianPixel]
+
+    xpos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+    ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+    x2ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+    xy2pos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
+    for x in range(PIXELS_RESIZE):
+        for y in range(PIXELS_RESIZE):
+            xpos[x,y] = x*(imgr[x,y]/255)
+            ypos[x,y] = y*(imgr[x,y]/255)
+            x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
+            xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
+
+    n = 400000        
+    xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
+    
+    numMedian = 0
+    if medianPixel in pixelCounts.keys():
+        numMedian = pixelCounts[medianPixel]
+
+    summary_dict = {
+        'img': imgr,
+        'label': label,
+        'lung_status': 'Healthy' if label == 'Healthy' else 'Pneumonia',
+        'shadeAvg': np.mean(imgr),
+        'shadeVar': np.var(imgr),
+        'lightestShade': np.max(imgr),
+        'numOfLightest': pixelCounts[np.max(imgr)],
+        'darkestShade': np.min(imgr),
+        'numOfDarkest': pixelCounts[np.min(imgr)],
+        'numOfMedian': numMedian,
+        'numAboveMedian': len(lightPixels),
+        'numBelowMedian': len(darkPixels),
+        'aboveMedianAvg': np.mean(lightPixels),
+        'aboveMedianVar': np.var(lightPixels),
+        'belowMedianAvg': np.mean(darkPixels),
+        'belowMedianVar': np.var(darkPixels),
+        'xbar': np.mean(xpos),
+        'x2bar': np.var(xpos),
+        'ybar': np.mean(ypos),
+        'y2bar': np.var(ypos),
+        'x2ybr': np.mean(x2ypos),
+        'xy2br': np.mean(xy2pos),
+        'xybar': xybar
+    }
+    return summary_dict
+
+def transform_train(imageAugIter):
+    print('Creating training set...')
+    df_transform = pd.DataFrame()
+
+    count = 0
+    for x in imageAugIter:
+        count = count + 1
+        if count > 300:
+            break
+            
+        images = x[0]
+        labels = x[1]
+        
+        for img, label in zip(images, labels):
+            summary_dict = img_summary(img.reshape(PIXELS_RESIZE, PIXELS_RESIZE), label)
+            
+            df_transform = df_transform.append({
+                'img': summary_dict['img'],
+                'label': summary_dict['label'],
+                'lung_status': summary_dict['lung_status'],
+                'shadeAvg': summary_dict['shadeAvg'],
+                'shadeVar': summary_dict['shadeVar'],
+                'lightestShade': summary_dict['lightestShade'],
+                'numOfLightest': summary_dict['numOfLightest'],
+                'darkestShade': summary_dict['darkestShade'],
+                'numOfDarkest': summary_dict['numOfDarkest'],
+                'numOfMedian': summary_dict['numOfMedian'],
+                'numAboveMedian': summary_dict['numAboveMedian'],
+                'numBelowMedian': summary_dict['numBelowMedian'],
+                'aboveMedianAvg': summary_dict['aboveMedianAvg'],
+                'aboveMedianVar': summary_dict['aboveMedianVar'],
+                'belowMedianAvg': summary_dict['belowMedianAvg'],
+                'belowMedianVar': summary_dict['belowMedianVar'],
+                'xbar': summary_dict['xbar'],
+                'x2bar': summary_dict['x2bar'],
+                'ybar': summary_dict['ybar'],
+                'y2bar': summary_dict['y2bar'],
+                'x2ybr': summary_dict['x2ybr'],
+                'xy2br': summary_dict['xy2br'],
+                'xybar': summary_dict['xybar'],
+            }, ignore_index = True)
+    return df_transform
+
+def transform_test(df):
+    print('Creating testing set...')
+    df_transform = pd.DataFrame()
+        
+    for index, row in df.iterrows():
+        img = cv2.imread('data/test/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
+        try:
+            imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
+        except Exception as e:
+            print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
+            continue
+            
+        summary_dict = img_summary(img, row['allLabel'])
+
+        df_transform = df_transform.append({
+            'img': summary_dict['img'],
+            'label': summary_dict['label'],
+            'lung_status': summary_dict['lung_status'],
+            'shadeAvg': summary_dict['shadeAvg'],
+            'shadeVar': summary_dict['shadeVar'],
+            'lightestShade': summary_dict['lightestShade'],
+            'numOfLightest': summary_dict['numOfLightest'],
+            'darkestShade': summary_dict['darkestShade'],
+            'numOfDarkest': summary_dict['numOfDarkest'],
+            'numOfMedian': summary_dict['numOfMedian'],
+            'numAboveMedian': summary_dict['numAboveMedian'],
+            'numBelowMedian': summary_dict['numBelowMedian'],
+            'aboveMedianAvg': summary_dict['aboveMedianAvg'],
+            'aboveMedianVar': summary_dict['aboveMedianVar'],
+            'belowMedianAvg': summary_dict['belowMedianAvg'],
+            'belowMedianVar': summary_dict['belowMedianVar'],
+            'xbar': summary_dict['xbar'],
+            'x2bar': summary_dict['x2bar'],
+            'ybar': summary_dict['ybar'],
+            'y2bar': summary_dict['y2bar'],
+            'x2ybr': summary_dict['x2ybr'],
+            'xy2br': summary_dict['xy2br'],
+            'xybar': summary_dict['xybar'],
+        }, ignore_index = True)
+    return df_transform
+
+train = transform_train(imageAugIter)
+test = transform_test(df_test)
+train.to_pickle('data/train.pkl')
+test.to_pickle('data/test.pkl')
+
+################################ Check Class Balances #####################################
+print('Training data summary:')
+print(train['label'].value_counts())
+print('Testing data summary:')
+print(test['label'].value_counts())
 
 ################################ Example images #####################################
 
@@ -43,9 +243,9 @@ df_test = df[df['Dataset_type'] == 'TEST']
 try:
     os.mkdir('images/')
 except OSError:
-    print ('Creation of the directory failed or already created')
+    print ('Creation of the directory images/ failed or already created')
 else:
-    print ('Successfully created the directory')
+    print ('Successfully created the directory images/')
 
 # Example x-ray of normal lung
 img_name = df_train.loc[df_train['Label'] == 'Normal'].iloc[5]['X_ray_image_name']
@@ -67,98 +267,6 @@ img_path = 'data/train/' + img_name
 load_img(img_path).save('images/bacteria.png')
 print('Image of bacteria lung saved to images/')
 
-################################ Transform data #####################################
-PIXELS_RESIZE = 200
-medianPixel = round(255 / 2)
-
-def transform_data(whichSet):
-    print('Creating ' + whichSet + ' set...')
-    
-    df_transform = pd.DataFrame()
-    
-    df = df_train if whichSet == 'train' else df_test
-    for index, row in df.iterrows():
-        img = cv2.imread('data/' + whichSet + '/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-        try:
-            imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
-        except Exception as e:
-            print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
-            continue
-
-        # for calculation of stats
-        unique, counts = np.unique(imgr, return_counts=True)
-        pixelCounts = dict(zip(unique, counts))
-
-        imgPixels = imgr.ravel()
-
-        # light if > median; dark if < median
-        lightPixels = imgPixels[imgPixels > medianPixel]
-        darkPixels = imgPixels[imgPixels < medianPixel]
-        
-        xpos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        x2ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        xy2pos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
-        for x in range(PIXELS_RESIZE):
-            for y in range(PIXELS_RESIZE):
-                xpos[x,y] = x*(imgr[x,y]/255)
-                ypos[x,y] = y*(imgr[x,y]/255)
-                x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
-                xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
-
-        n = 400000        
-        xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
-         
-        allLabel = ''
-        if row['Label'] == 'Normal':
-            allLabel = 'Healthy'
-        elif row['Label_1_Virus_category'] == 'bacteria':
-            allLabel = 'Bacteria'
-        elif row['Label_2_Virus_category'] == 'COVID-19':
-            allLabel = 'COVID-19'
-        else:
-            allLabel = 'Other Virus'
-        
-        
-        numMedian = 0
-        if medianPixel in pixelCounts.keys():
-            numMedian = pixelCounts[medianPixel]
-
-        df_transform = df_transform.append({
-            'img': imgr,
-            'label1': row['Label'],
-            'label2': row['Label_1_Virus_category'],
-            'label3': row['Label_2_Virus_category'],
-            'label4': allLabel,
-            'shadeAvg': np.mean(imgr),
-            'shadeVar': np.var(imgr),
-            'lightestShade': np.max(imgr),
-            'numOfLightest': pixelCounts[np.max(imgr)],
-            'darkestShade': np.min(imgr),
-            'numOfDarkest': pixelCounts[np.min(imgr)],
-            'numOfMedian': numMedian,
-            'numAboveMedian': len(lightPixels),
-            'numBelowMedian': len(darkPixels),
-            'aboveMedianAvg': np.mean(lightPixels),
-            'aboveMedianVar': np.var(lightPixels),
-            'belowMedianAvg': np.mean(darkPixels),
-            'belowMedianVar': np.var(darkPixels),
-            'xbar': np.mean(xpos),
-            'x2bar': np.var(xpos),
-            'ybar': np.mean(ypos),
-            'y2bar': np.var(ypos),
-            'x2ybr': np.mean(x2ypos),
-            'xy2br': np.mean(xy2pos),
-            'xybar': xybar
-        }, ignore_index = True)
-    print('Finished creating ' + whichSet + ' set')
-    return df_transform
-
-train = transform_data('train')
-test = transform_data('test')
-train.to_pickle('data/train.pkl')
-test.to_pickle('data/test.pkl')
-
 ################################ Exploratory analysis #####################################
 
 print('Creating histograms...')
@@ -169,11 +277,11 @@ avgCountsNormal = [0] * 256
 avgCountsPneu = [0] * 256
 for index, row in train.iterrows():
     counts, bins = np.histogram(train.iloc[index]['img'].ravel(), 256, (0,255))
-    patientType = row['label1']
-    if patientType == "Normal":
+    patientType = row['lung_status']
+    if patientType == "Healthy":
         avgCountsNormal = avgCountsNormal + counts
         countNormal += 1
-    elif patientType == "Pnemonia":
+    elif patientType == "Pneumonia":
         avgCountsPneu = avgCountsPneu + counts
         countPneu += 1
 
@@ -205,8 +313,8 @@ plt.clf()
 print('Creating boxplots...')
 # for every explanatory variable, create boxplot
 for col in train.columns:
-    if col not in ('img', 'label1', 'label2', 'label3', 'label4'):
-        boxplot = train.boxplot(by = 'label1', column = [col], grid = False)
+    if col not in ('img', 'label', 'lung_status'):
+        boxplot = train.boxplot(by = 'lung_status', column = [col], grid = False)
         plt.title(col)
         plt.suptitle("")
         plt.savefig('images/boxplot_' + col)
