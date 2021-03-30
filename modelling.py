@@ -1,13 +1,10 @@
 import pandas as pd
 import numpy as np
-import math
-from sklearn.metrics import confusion_matrix, roc_auc_score
+from sklearn.metrics import confusion_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.neural_network import MLPClassifier
 from sklearn.feature_selection import SelectFromModel
-from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
-from sklearn.preprocessing import label_binarize
+from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
 from itertools import combinations
 
@@ -157,8 +154,9 @@ testPreds = {}
 print("\nRandom Forest")
 best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
                           {
-                              'n_estimators': [100, 500, 1000, 1500],
-                              'max_depth': [1, 10, None]
+                              'n_estimators': [int(x) for x in np.linspace(start = 200, stop = 1500, num = 10)],
+                              'max_features': ['sqrt', 'auto'],
+                              'max_depth':[100, 500, None]
                           },
                           df_train,
                           df_test)
