@@ -154,9 +154,12 @@ testPreds = {}
 print("\nRandom Forest")
 best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
                           {
-                              'n_estimators': [int(x) for x in np.linspace(start = 200, stop = 1500, num = 10)],
-                              'max_features': ['sqrt', 'auto'],
-                              'max_depth':[100, 500, None]
+                              'bootstrap': [True, False],
+                              'n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
+                              'max_features': ['auto', 'sqrt'],
+                              'min_samples_leaf': [1, 2, 4],
+                              'min_samples_split': [2, 5, 10],
+                              'max_depth':[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None]
                           },
                           df_train,
                           df_test)
