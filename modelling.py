@@ -139,35 +139,48 @@ print("Perform Analysis:")
 
 testPreds = {}
 
-print("\nLogit Regression")
-best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
-                              {
-                                  'penalty': ['l2'],
-                                  'C': [1.0]
-                              },
-                              df_train,
-                              df_test)
-testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
-                                                     df_train,
-                                                     df_test)
-testPreds["Logit"] = testPredLogit
-testPreds["Logit Subset"] = testPredSubsetLogit
+# print("\nLogit Regression")
+# best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
+#                               {
+#                                   'penalty': ['l2'],
+#                                   'C': [1.0]
+#                               },
+#                               df_train,
+#                               df_test)
+# testPredLogit, testPredSubsetLogit = fitPredictModel(best_logit,
+#                                                      df_train,
+#                                                      df_test)
+# testPreds["Logit"] = testPredLogit
+# testPreds["Logit Subset"] = testPredSubsetLogit
 
 
-# print("\nRandom Forest")
-# testPredRf, testPredSubsetRf = fitPredictModel(RandomForestClassifier(n_estimators=1400, max_depth=220, max_features='auto', class_weight = 'balanced'),
-#                                                df_train,
-#                                                df_test)
-# testPreds["Random Forest"] = testPredRf
-# testPreds["Random Forest Subset"] = testPredSubsetRf
+print("\nRandom Forest")
+best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
+                          {
+                              'n_estimators': [100, 500, 1000, 1500],
+                              'max_depth': [1, 10, None]
+                          },
+                          df_train,
+                          df_test)
+testPredRf, testPredSubsetRf = fitPredictModel(best_rf,
+                                               df_train,
+                                               df_test)
+testPreds["Random Forest"] = testPredRf
+testPreds["Random Forest Subset"] = testPredSubsetRf
 
 
-# print("\nAda Boost")
-# testPredAda, testPredSubsetAda = fitPredictModel(AdaBoostClassifier(),
-#                                                  df_train,
-#                                                  df_test)
-# testPreds["Ada Boost"] = testPredAda
-# testPreds["Ada Boost Subset"] = testPredSubsetAda
+print("\nAda Boost")
+best_ada = hyperparamTuning(AdaBoostClassifier(),
+                           {
+                               'n_estimators': [50,100,500,1000]
+                           },
+                           df_train,
+                           df_test)
+testPredAda, testPredSubsetAda = fitPredictModel(best_ada,
+                                                 df_train,
+                                                 df_test)
+testPreds["Ada Boost"] = testPredAda
+testPreds["Ada Boost Subset"] = testPredSubsetAda
 
 # for each method, create comparison plots probabilities vs other method
 comparisons = combinations(testPreds.keys(), 2)
