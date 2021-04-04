@@ -46,11 +46,11 @@ def fitPredictModel(model, df_train, df_test):
     probas = model.predict_proba(x_test)
     f1score = f1_scores(y_test, pred)
     specificity = calc_spec(y_test, pred)
-    print("Specificity : \n", "Bacteria, COVID-19, Healthy, Other Virus\n", specificity)
     print('\nF1-Scores for Bacteria, COVID-19, Healthy, Other Virus')
     print(f1score[2])
     print('Supports for Bacteria, COVID-19, Healthy, Other Virus')
     print(f1score[3], '\n')
+    print("Specificity : \n", "Bacteria, COVID-19, Healthy, Other Virus\n", specificity)
     
     cfmatrix = np.array(confusion_matrix(y_test, pred, labels=classes))
     print(pd.DataFrame(cfmatrix, index=classes, columns=classes))
