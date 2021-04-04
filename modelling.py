@@ -45,6 +45,8 @@ def fitPredictModel(model, df_train, df_test):
     pred = model.predict(x_test)
     probas = model.predict_proba(x_test)
     f1score = f1_scores(y_test, pred)
+    specificity = calc_spec(y_test, pred)
+    print("Specificity : \n", "Bacteria, COVID-19, Healthy, Other Virus\n", specificity)
     print('\nF1-Scores for Bacteria, COVID-19, Healthy, Other Virus')
     print(f1score[2])
     print('Supports for Bacteria, COVID-19, Healthy, Other Virus')
@@ -62,11 +64,12 @@ def fitPredictModel(model, df_train, df_test):
     pred_subset = fit_subset.predict(x_test_subset)
     probas_subset = fit_subset.predict_proba(x_test_subset)
     f1score_subset = f1_scores(y_test, pred_subset)
+    specificity_subset = calc_spec(y_test, pred_subset)
     print('\nF1-Scores for Bacteria, COVID-19, Healthy, Other Virus')
     print(f1score_subset[2])
     print('Supports for Bacteria, COVID-19, Healthy, Other Virus')
     print(f1score_subset[3], '\n')
-
+    print("Specificity : \n", "Bacteria, COVID-19, Healthy, Other Virus\n", specificity_subset)
 
     cfmatrix_subset = np.array(confusion_matrix(y_test, pred_subset, labels=classes))
     print(pd.DataFrame(cfmatrix_subset, index=classes, columns=classes), '\n')
@@ -137,9 +140,21 @@ def comparisonProbabilityPlot(method1, method2, pred1, pred2):
     plt.ylabel(method2)
     plt.savefig('images/compare/compare_' + method1 + '_' + method2)
     plt.clf()
+   
+def calc_spec(actual, pred):
     
-# works but a lot of warnings (Not sure how to solve it)
-# It does calculate sensitivity and f1 scores
+    cnf_matrix = confusion_matrix(actual, pred)
+
+    TP = np.diag(cnf_matrix)
+    FP = np.sum(cnf_matrix, axis=0) - TP 
+    FN = np.sum(cnf_matrix, axis=1) - TP 
+    TN = cnf_matrix.sum() - (FP + FN + TP)
+
+    # Specificity or true negative rate
+    TNR = TN/(TN+FP) 
+
+    return TNR
+
 def f1_scores(actual, pred):
     return precision_recall_fscore_support(actual, pred)
 
