@@ -19,6 +19,7 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42, test_si
 df_train = pd.DataFrame(np.column_stack((X_train, y_train)), columns=train.columns)
 df_val = pd.DataFrame(np.column_stack((X_val, y_val)), columns=train.columns)
 
+# Setup augmentation identical to before but including validation set
 train_datagen = ImageDataGenerator(rescale = 1./255,
                                    featurewise_center=False,
                                    samplewise_center=False, 
@@ -61,7 +62,6 @@ test_set = test_datagen.flow_from_dataframe(dataframe = df_test,
                                             class_mode = 'categorical',
                                             shuffle = False)
 
-print('Training CNN...\n')
 cnn = Sequential()
 
 #Convolution
@@ -86,9 +86,11 @@ cnn.add(Dense(activation = 'softmax', units = 4))
 # Compile the Neural network
 cnn.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
+print('Training CNN...\n')
 cnn_model = cnn.fit(training_set,
-                    epochs = 20,
+                    epochs = 160,
                     validation_data = validation_set)
+print('Finished training CNN\n')
 
 # Accuracy 
 plt.plot(cnn_model.history['accuracy'])
@@ -176,8 +178,6 @@ def coverage(table):
     avgLen = avgLen / rowFreq
     return avgLen, miss, miss/rowFreq, cover/rowFreq
 
-print('\n', test_set.class_indices)
-
 # Get true labels in test set and convert from numerical to labels
 actual = pd.get_dummies(pd.Series(test_set.classes)).to_numpy()
 actual = actual.argmax(axis=-1)
@@ -198,4 +198,5 @@ test_preds_cnn = np.where(test_preds_cnn == '2', 'Healthy', test_preds_cnn)
 test_preds_cnn = np.where(test_preds_cnn == '3', 'Other Virus', test_preds_cnn)
 
 # Evaluate CNN
+print('CNN Results')
 fitPredictModel(actual, test_preds_cnn, test_probs_cnn)
