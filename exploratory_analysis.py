@@ -1,9 +1,7 @@
 import os
-import shutil
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2
 from tensorflow.keras.preprocessing.image import load_img
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -186,47 +184,6 @@ def transform_data(imageAugIter, batch):
                 'xybar': summary_dict['xybar'],
             }, ignore_index = True)
     return df_transform
-
-# def transform_test(df):
-#     print('Creating testing set...')
-#     df_transform = pd.DataFrame()
-        
-#     for index, row in df.iterrows():
-#         img = cv2.imread('data/test/' + row['X_ray_image_name'], cv2.IMREAD_GRAYSCALE)
-#         try:
-#             imgr = cv2.resize(img, (PIXELS_RESIZE, PIXELS_RESIZE))
-#         except Exception as e:
-#             print('Removed ' + row['X_ray_image_name'] + ' since it is broken')
-#             continue
-            
-#         summary_dict = img_summary(img, row['allLabel'])
-
-#         df_transform = df_transform.append({
-#             'img': summary_dict['img'],
-#             'label': summary_dict['label'],
-#             'lung_status': summary_dict['lung_status'],
-#             'shadeAvg': summary_dict['shadeAvg'],
-#             'shadeVar': summary_dict['shadeVar'],
-#             'lightestShade': summary_dict['lightestShade'],
-#             'numOfLightest': summary_dict['numOfLightest'],
-#             'darkestShade': summary_dict['darkestShade'],
-#             'numOfDarkest': summary_dict['numOfDarkest'],
-#             'numOfMedian': summary_dict['numOfMedian'],
-#             'numAboveMedian': summary_dict['numAboveMedian'],
-#             'numBelowMedian': summary_dict['numBelowMedian'],
-#             'aboveMedianAvg': summary_dict['aboveMedianAvg'],
-#             'aboveMedianVar': summary_dict['aboveMedianVar'],
-#             'belowMedianAvg': summary_dict['belowMedianAvg'],
-#             'belowMedianVar': summary_dict['belowMedianVar'],
-#             'xbar': summary_dict['xbar'],
-#             'x2bar': summary_dict['x2bar'],
-#             'ybar': summary_dict['ybar'],
-#             'y2bar': summary_dict['y2bar'],
-#             'x2ybr': summary_dict['x2ybr'],
-#             'xy2br': summary_dict['xy2br'],
-#             'xybar': summary_dict['xybar'],
-#         }, ignore_index = True)
-#     return df_transform
 
 train = transform_data(train_flow, 300)
 test = transform_data(test_flow, 19)

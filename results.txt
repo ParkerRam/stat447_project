@@ -1,0 +1,451 @@
+Perform Analysis:
+
+=============== LOGIT REGRESSION ===============
+Best AUC: 0.7590872586567265 using {'C': 1.0, 'penalty': 'l2'}
+Overall accuracy:  0.5542763157894737 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.73015873 0.10344828 0.46994536 0.57337884]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.77033493 0.05555556 0.60992908 0.56      ]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.69396552 0.75       0.38222222 0.58741259]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy           86        24           57        58
+Bacteria          32       161            8        31
+Other Virus       23        23           84        13
+COVID-19           0         1            1         6
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       1.887931
+COVID-19       1.625000
+Healthy        1.853333
+Other Virus    1.895105
+dtype: float64
+ --> Misclass:
+Bacteria       36.0
+COVID-19        1.0
+Healthy        97.0
+Other Virus    23.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.155172
+COVID-19       0.125000
+Healthy        0.431111
+Other Virus    0.160839
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.844828
+COVID-19       0.875000
+Healthy        0.568889
+Other Virus    0.839161
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       2.862069
+COVID-19       2.750000
+Healthy        2.973333
+Other Virus    2.797203
+dtype: float64
+ --> Misclass:
+Bacteria       17.0
+COVID-19        1.0
+Healthy        36.0
+Other Virus     3.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.073276
+COVID-19       0.125000
+Healthy        0.160000
+Other Virus    0.020979
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.926724
+COVID-19       0.875000
+Healthy        0.840000
+Other Virus    0.979021
+dtype: float64
+
+
+
+=============== LOGIT REGRESSION SUBSET ===============
+- selected subset: ['aboveMedianVar', 'belowMedianVar', 'numOfDarkest', 'x2bar', 'y2bar']
+Overall accuracy:  0.5296052631578947 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.74940334 0.08064516 0.4640884  0.48874598]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.83957219 0.04310345 0.61313869 0.45238095]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.67672414 0.625      0.37333333 0.53146853]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy           84         8           71        62
+Bacteria          23       157           20        32
+Other Virus       30        20           76        17
+COVID-19           0         2            1         5
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       1.900862
+COVID-19       1.375000
+Healthy        1.742222
+Other Virus    1.832168
+dtype: float64
+ --> Misclass:
+Bacteria       42.0
+COVID-19        1.0
+Healthy        81.0
+Other Virus    33.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.181034
+COVID-19       0.125000
+Healthy        0.360000
+Other Virus    0.230769
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.818966
+COVID-19       0.875000
+Healthy        0.640000
+Other Virus    0.769231
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       2.879310
+COVID-19       2.375000
+Healthy        2.728889
+Other Virus    2.811189
+dtype: float64
+ --> Misclass:
+Bacteria       27.0
+COVID-19        1.0
+Healthy        28.0
+Other Virus     3.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.116379
+COVID-19       0.125000
+Healthy        0.124444
+Other Virus    0.020979
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.883621
+COVID-19       0.875000
+Healthy        0.875556
+Other Virus    0.979021
+dtype: float64
+
+
+
+=============== RANDOM FOREST ===============
+Best AUC: 0.8644305571427885 using {'max_depth': None, 'n_estimators': 1000}
+Overall accuracy:  0.6348684210526315 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.72566372 0.         0.63461538 0.43171806]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.61561562 0.         0.69109948 0.58333333]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.88362069 0.         0.58666667 0.34265734]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy          132        66           27         0
+Bacteria          20       205            7         0
+Other Virus       38        56           49         0
+COVID-19           1         6            1         0
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       1.133621
+COVID-19       1.750000
+Healthy        1.528889
+Other Virus    1.643357
+dtype: float64
+ --> Misclass:
+Bacteria       14.0
+COVID-19        7.0
+Healthy        61.0
+Other Virus    53.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.060345
+COVID-19       0.875000
+Healthy        0.271111
+Other Virus    0.370629
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.939655
+COVID-19       0.125000
+Healthy        0.728889
+Other Virus    0.629371
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       2.150862
+COVID-19       2.625000
+Healthy        2.591111
+Other Virus    2.517483
+dtype: float64
+ --> Misclass:
+Bacteria        3.0
+COVID-19        5.0
+Healthy        23.0
+Other Virus     6.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.012931
+COVID-19       0.625000
+Healthy        0.102222
+Other Virus    0.041958
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.987069
+COVID-19       0.375000
+Healthy        0.897778
+Other Virus    0.958042
+dtype: float64
+
+
+
+=============== RANDOM FOREST SUBSET ===============
+- selected subset: ['aboveMedianVar', 'belowMedianAvg', 'belowMedianVar', 'grayToneVar', 'lightestGrayTone', 'numAboveMedian', 'numBelowMedian', 'numOfDarkest', 'x2bar']
+Overall accuracy:  0.6513157894736842 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.73571429 0.         0.64483627 0.496     ]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.62804878 0.         0.74418605 0.57943925]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.88793103 0.         0.56888889 0.43356643]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy          128        59           38         0
+Bacteria          20       206            6         0
+Other Virus       23        57           62         1
+COVID-19           1         6            1         0
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       1.094828
+COVID-19       1.500000
+Healthy        1.346667
+Other Virus    1.475524
+dtype: float64
+ --> Misclass:
+Bacteria       22.0
+COVID-19        8.0
+Healthy        61.0
+Other Virus    54.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.094828
+COVID-19       1.000000
+Healthy        0.271111
+Other Virus    0.377622
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.905172
+COVID-19       0.000000
+Healthy        0.728889
+Other Virus    0.622378
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       1.900862
+COVID-19       2.375000
+Healthy        2.262222
+Other Virus    2.405594
+dtype: float64
+ --> Misclass:
+Bacteria        6.0
+COVID-19        8.0
+Healthy        36.0
+Other Virus     7.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.025862
+COVID-19       1.000000
+Healthy        0.160000
+Other Virus    0.048951
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.974138
+COVID-19       0.000000
+Healthy        0.840000
+Other Virus    0.951049
+dtype: float64
+
+
+
+=============== ADA BOOST ===============
+Best AUC: 0.7505084417843503 using {'n_estimators': 50}
+Overall accuracy:  0.5805921052631579 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.72164948 0.18181818 0.5990566  0.14457831]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.6        0.11111111 0.63819095 0.52173913]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.90517241 0.5        0.56444444 0.08391608]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy          127        66           10        22
+Bacteria          18       210            1         3
+Other Virus       53        71           12         7
+COVID-19           1         3            0         4
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       2.0
+COVID-19       2.0
+Healthy        2.0
+Other Virus    2.0
+dtype: float64
+ --> Misclass:
+Bacteria       16.0
+COVID-19        4.0
+Healthy        53.0
+Other Virus    48.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.068966
+COVID-19       0.500000
+Healthy        0.235556
+Other Virus    0.335664
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.931034
+COVID-19       0.500000
+Healthy        0.764444
+Other Virus    0.664336
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       3.995690
+COVID-19       4.000000
+Healthy        4.000000
+Other Virus    3.993007
+dtype: float64
+ --> Misclass:
+Bacteria       0.0
+COVID-19       0.0
+Healthy        0.0
+Other Virus    0.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.0
+COVID-19       0.0
+Healthy        0.0
+Other Virus    0.0
+dtype: float64
+ --> Coverage Rate:
+Bacteria       1.0
+COVID-19       1.0
+Healthy        1.0
+Other Virus    1.0
+dtype: float64
+
+
+
+=============== ADA BOOST SUBSET ===============
+- selected subset: ['aboveMedianAvg', 'aboveMedianVar', 'belowMedianAvg', 'lightestGrayTone', 'numAboveMedian', 'numBelowMedian', 'numOfDarkest', 'numOfMedian', 'xbar', 'y2bar', 'ybar']
+Overall accuracy:  0.5444078947368421 
+
+F1-Scores for Bacteria, COVID-19, Healthy, Other Virus
+ [0.71353251 0.14814815 0.55609756 0.1025641 ]
+Precision for Bacteria, COVID-19, Healthy, Other Virus
+ [0.60237389 0.08219178 0.61621622 0.61538462]
+Recall for Bacteria, COVID-19, Healthy, Other Virus
+ [0.875      0.75       0.50666667 0.05594406]
+Supports for Bacteria, COVID-19, Healthy, Other Virus
+ [232   8 225 143] 
+
+             Healthy  Bacteria  Other Virus  COVID-19
+Healthy          114        59            3        49
+Bacteria          17       203            2        10
+Other Virus       53        74            8         8
+COVID-19           1         1            0         6
+
+Prediction Interval Scores
+
+ - scores for 50% pred intervals:
+ --> Avg length:
+Bacteria       2.0
+COVID-19       2.0
+Healthy        2.0
+Other Virus    2.0
+dtype: float64
+ --> Misclass:
+Bacteria       17.0
+COVID-19        1.0
+Healthy        63.0
+Other Virus    18.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.073276
+COVID-19       0.125000
+Healthy        0.280000
+Other Virus    0.125874
+dtype: float64
+ --> Coverage Rate:
+Bacteria       0.926724
+COVID-19       0.875000
+Healthy        0.720000
+Other Virus    0.874126
+dtype: float64
+
+ - scores for 80% pred intervals:
+ --> Avg length:
+Bacteria       3.995690
+COVID-19       4.000000
+Healthy        4.000000
+Other Virus    3.993007
+dtype: float64
+ --> Misclass:
+Bacteria       0.0
+COVID-19       0.0
+Healthy        0.0
+Other Virus    0.0
+dtype: float64
+ --> Misclass Rate:
+Bacteria       0.0
+COVID-19       0.0
+Healthy        0.0
+Other Virus    0.0
+dtype: float64
+ --> Coverage Rate:
+Bacteria       1.0
+COVID-19       1.0
+Healthy        1.0
+Other Virus    1.0
+dtype: float64
+
+
