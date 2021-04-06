@@ -32,7 +32,7 @@ for index, row in df.iterrows():
     if count > 7:
         break
 
-# Create multinomial label     
+# Create multinomial label
 for index, row in df.iterrows():
     allLabel = ''
     if row['Label'] == 'Normal':
@@ -43,9 +43,9 @@ for index, row in df.iterrows():
         allLabel = 'COVID-19'
     else:
         allLabel = 'Other Virus'
-        
+
     df.at[index, 'allLabel'] = allLabel
-    
+
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
 
@@ -54,16 +54,16 @@ df_test.to_pickle('data/test_metadata.pkl')
 
 ################################ Image Augmentation #####################################
 train_datagen = ImageDataGenerator(featurewise_center=False,
-                                   samplewise_center=False, 
-                                   featurewise_std_normalization=False, 
-                                   samplewise_std_normalization=False, 
-                                   zca_whitening=False, 
-                                   rotation_range = 30,  
+                                   samplewise_center=False,
+                                   featurewise_std_normalization=False,
+                                   samplewise_std_normalization=False,
+                                   zca_whitening=False,
+                                   rotation_range = 30,
                                    zoom_range = 0.2,
-                                   width_shift_range=0.1,  
-                                   height_shift_range=0.1,  
-                                   horizontal_flip = True, 
-                                   vertical_flip=False) 
+                                   width_shift_range=0.1,
+                                   height_shift_range=0.1,
+                                   horizontal_flip = True,
+                                   vertical_flip=False)
 
 test_datagen = ImageDataGenerator()
 
@@ -71,7 +71,7 @@ PIXELS_RESIZE = 200
 train_flow = train_datagen.flow_from_dataframe(dataframe = df_train,
                                                directory = 'data/train',
                                                x_col = 'X_ray_image_name',
-                                               y_col = 'allLabel', 
+                                               y_col = 'allLabel',
                                                target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
                                                color_mode = 'grayscale',
                                                class_mode = 'raw')
@@ -79,7 +79,7 @@ train_flow = train_datagen.flow_from_dataframe(dataframe = df_train,
 test_flow = test_datagen.flow_from_dataframe(dataframe = df_test,
                                              directory = 'data/test',
                                              x_col = 'X_ray_image_name',
-                                             y_col = 'allLabel', 
+                                             y_col = 'allLabel',
                                              target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
                                              color_mode = 'grayscale',
                                              class_mode = 'raw')
@@ -108,9 +108,9 @@ def img_summary(imgr, label):
             x2ypos[x,y] = (x*x)*y*(imgr[x,y]/255)
             xy2pos[x,y] = x*(y*y)*(imgr[x,y]/255)
 
-    n = PIXELS_RESIZE*PIXELS_RESIZE        
+    n = PIXELS_RESIZE*PIXELS_RESIZE
     xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
-    
+
     numMedian = 0
     if medianPixel in pixelCounts.keys():
         numMedian = pixelCounts[medianPixel]
@@ -151,13 +151,13 @@ def transform_data(imageAugIter, batch):
         count = count + 1
         if count > batch:
             break
-            
+
         images = x[0]
         labels = x[1]
-        
+
         for img, label in zip(images, labels):
             summary_dict = img_summary(img.reshape(PIXELS_RESIZE, PIXELS_RESIZE), label)
-            
+
             df_transform = df_transform.append({
                 'img': summary_dict['img'],
                 'label': summary_dict['label'],
@@ -213,14 +213,14 @@ load_img(img_path).save('images/normal.png')
 print('Image of normal lung saved to images/')
 
 # Example x-ray of virus lung
-img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') & 
+img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') &
                        (df_train['Label_1_Virus_category'] == 'Virus')].iloc[3]['X_ray_image_name']
 img_path = 'data/train/' + img_name
 load_img(img_path).save('images/virus.png')
 print('Image of virus lung saved to images/')
 
 # Example x-ray of bacteria lung
-img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') & 
+img_name = df_train.loc[(df_train['Label'] == 'Pnemonia') &
                        (df_train['Label_1_Virus_category'] == 'bacteria')].iloc[10]['X_ray_image_name']
 img_path = 'data/train/' + img_name
 load_img(img_path).save('images/bacteria.png')
@@ -271,9 +271,9 @@ plt.clf()
 
 print('Creating boxplots...')
 # for every explanatory variable, create boxplot
-for col in train.columns:
+for col in df_train.columns:
     if col not in ('img', 'label', 'lungStatus'):
-        boxplot = train.boxplot(by = 'lungStatus', column = [col], grid = False)
+        boxplot = train.boxplot(by = 'label', column = [col], grid = False)
         plt.title(col)
         plt.suptitle("")
         plt.savefig('images/boxplot_' + col)
