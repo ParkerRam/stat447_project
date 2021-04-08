@@ -244,7 +244,7 @@ Params:
     actual: true values of classes in holdout set
     pred: predicted classes for cases in holdout set 
 Returns:
-   f1_score for fitted model
+    f1_score for fitted model
 """
 def f1_scores(actual, pred):
     return precision_recall_fscore_support(actual, pred)
