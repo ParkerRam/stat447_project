@@ -34,17 +34,17 @@ for index, row in df.iterrows():
 
 # Create multinomial label
 for index, row in df.iterrows():
-    allLabel = ''
+    all_label = ''
     if row['Label'] == 'Normal':
-        allLabel = 'Healthy'
+        all_label = 'Healthy'
     elif row['Label_1_Virus_category'] == 'bacteria':
-        allLabel = 'Bacteria'
+        all_label = 'Bacteria'
     elif row['Label_2_Virus_category'] == 'COVID-19':
-        allLabel = 'COVID-19'
+        all_label = 'COVID-19'
     else:
-        allLabel = 'Other Virus'
+        all_label = 'Other Virus'
 
-    df.at[index, 'allLabel'] = allLabel
+    df.at[index, 'all_label'] = all_label
 
 df_train = df[df['Dataset_type'] == 'TRAIN']
 df_test = df[df['Dataset_type'] == 'TEST']
@@ -58,44 +58,53 @@ train_datagen = ImageDataGenerator(featurewise_center=False,
                                    featurewise_std_normalization=False,
                                    samplewise_std_normalization=False,
                                    zca_whitening=False,
-                                   rotation_range = 30,
-                                   zoom_range = 0.2,
+                                   rotation_range=30,
+                                   zoom_range=0.2,
                                    width_shift_range=0.1,
                                    height_shift_range=0.1,
-                                   horizontal_flip = True,
+                                   horizontal_flip=True,
                                    vertical_flip=False)
 
 test_datagen = ImageDataGenerator()
 
 PIXELS_RESIZE = 200
-train_flow = train_datagen.flow_from_dataframe(dataframe = df_train,
-                                               directory = 'data/train',
-                                               x_col = 'X_ray_image_name',
-                                               y_col = 'allLabel',
-                                               target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
-                                               color_mode = 'grayscale',
-                                               class_mode = 'raw')
+train_flow = train_datagen.flow_from_dataframe(dataframe=df_train,
+                                               directory='data/train',
+                                               x_col='X_ray_image_name',
+                                               y_col='all_label',
+                                               target_size=(PIXELS_RESIZE, PIXELS_RESIZE),
+                                               color_mode='grayscale',
+                                               class_mode='raw')
 
-test_flow = test_datagen.flow_from_dataframe(dataframe = df_test,
-                                             directory = 'data/test',
-                                             x_col = 'X_ray_image_name',
-                                             y_col = 'allLabel',
-                                             target_size = (PIXELS_RESIZE, PIXELS_RESIZE),
-                                             color_mode = 'grayscale',
-                                             class_mode = 'raw')
+test_flow = test_datagen.flow_from_dataframe(dataframe=df_test,
+                                             directory='data/test',
+                                             x_col='X_ray_image_name',
+                                             y_col='all_label',
+                                             target_size=(PIXELS_RESIZE, PIXELS_RESIZE),
+                                             color_mode='grayscale',
+                                             class_mode='raw')
 
 ################################ Transform data #####################################
-medianPixel = round(255 / 2)
+median_pixel = round(255 / 2)
+
+"""
+Calculates summary statistics of given image and returns dictionary for all features
+Params:
+    imgr: array representation of image
+    label: the classification of given image
+Returns:
+    summary_dict: dictionary of features for given image
+"""
 def img_summary(imgr, label):
     # for calculation of stats
     unique, counts = np.unique(imgr, return_counts=True)
-    pixelCounts = dict(zip(unique, counts))
+    pixel_counts = dict(zip(unique, counts))
 
-    imgPixels = imgr.ravel()
+    img_pixels = imgr.ravel()
 
     # light if > median; dark if < median
-    lightPixels = imgPixels[imgPixels > medianPixel]
-    darkPixels = imgPixels[imgPixels < medianPixel]
+    light_pixels = img_pixels[img_pixels > median_pixel]
+    dark_pixels = img_pixels[img_pixels < median_pixel]
 
     xpos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
     ypos = np.empty((PIXELS_RESIZE, PIXELS_RESIZE))
@@ -111,9 +120,9 @@ def img_summary(imgr, label):
     n = PIXELS_RESIZE*PIXELS_RESIZE
     xybar = ((n * np.sum(xpos*ypos)) - (np.sum(xpos)*np.sum(ypos))) / (np.sqrt((n*np.sum(xpos**2) - np.sum(xpos)**2) * (n*np.sum(ypos**2) - np.sum(ypos)**2)))
 
-    numMedian = 0
-    if medianPixel in pixelCounts.keys():
-        numMedian = pixelCounts[medianPixel]
+    num_median = 0
+    if median_pixel in pixel_counts.keys():
+        num_median = pixel_counts[median_pixel]
 
     summary_dict = {
         'img': imgr,
@@ -122,16 +131,16 @@ def img_summary(imgr, label):
         'grayToneAvg': np.mean(imgr),
         'grayToneVar': np.var(imgr),
         'lightestGrayTone': np.max(imgr),
-        'numOfLightest': pixelCounts[np.max(imgr)],
+        'numOfLightest': pixel_counts[np.max(imgr)],
         'darkestGrayTone': np.min(imgr),
-        'numOfDarkest': pixelCounts[np.min(imgr)],
-        'numOfMedian': numMedian,
-        'numAboveMedian': len(lightPixels),
-        'numBelowMedian': len(darkPixels),
-        'aboveMedianAvg': np.mean(lightPixels),
-        'aboveMedianVar': np.var(lightPixels),
-        'belowMedianAvg': np.mean(darkPixels),
-        'belowMedianVar': np.var(darkPixels),
+        'numOfDarkest': pixel_counts[np.min(imgr)],
+        'numOfMedian': num_median,
+        'numAboveMedian': len(light_pixels),
+        'numBelowMedian': len(dark_pixels),
+        'aboveMedianAvg': np.mean(light_pixels),
+        'aboveMedianVar': np.var(light_pixels),
+        'belowMedianAvg': np.mean(dark_pixels),
+        'belowMedianVar': np.var(dark_pixels),
         'xbar': np.mean(xpos),
         'x2bar': np.var(xpos),
         'ybar': np.mean(ypos),
@@ -142,12 +151,20 @@ def img_summary(imgr, label):
     }
     return summary_dict
 
-def transform_data(imageAugIter, batch):
+"""
+Transforms images in given data augmentation object 
+Params:
+    image_aug_iter: data augmentation iterator to augment images and transform to array representation
+    batch: number of batches of images to transform
+Returns:
+    df_transform: transformed set
+"""
+def transform_data(image_aug_iter, batch):
     print('Creating set...')
     df_transform = pd.DataFrame()
 
     count = 0
-    for x in imageAugIter:
+    for x in image_aug_iter:
         count = count + 1
         if count > batch:
             break
@@ -229,40 +246,40 @@ print('Image of bacteria lung saved to images/')
 ################################ Exploratory analysis #####################################
 
 print('Creating histograms...')
-countNormal = 0
-countPneu = 0
+count_normal = 0
+count_pneu = 0
 
-avgCountsNormal = [0] * 256
-avgCountsPneu = [0] * 256
+avg_count_normal = [0] * 256
+avg_counts_pneu = [0] * 256
 for index, row in train.iterrows():
     counts, bins = np.histogram(train.iloc[index]['img'].ravel(), 256, (0,255))
-    patientType = row['lungStatus']
-    if patientType == "Healthy":
-        avgCountsNormal = avgCountsNormal + counts
-        countNormal += 1
-    elif patientType == "Pneumonia":
-        avgCountsPneu = avgCountsPneu + counts
-        countPneu += 1
+    patient_type = row['lungStatus']
+    if patient_type == "Healthy":
+        avg_count_normal = avg_count_normal + counts
+        count_normal += 1
+    elif patient_type == "Pneumonia":
+        avg_counts_pneu = avg_counts_pneu + counts
+        count_pneu += 1
 
-avgCountsNormal = avgCountsNormal / countNormal
-avgCountsPneu = avgCountsPneu / countPneu
+avg_count_normal = avg_count_normal / count_normal
+avg_counts_pneu = avg_counts_pneu / count_pneu
 
-plt.bar(np.arange(0,256), avgCountsNormal)
+plt.bar(np.arange(0,256), avg_count_normal)
 plt.xlabel('Pixel Gray Tone')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_normal')
 
 plt.clf()
 
-plt.bar(np.arange(0,256), avgCountsPneu)
+plt.bar(np.arange(0,256), avg_counts_pneu)
 plt.xlabel('Pixel Gray Tone')
 plt.ylabel('Avg Count')
 plt.savefig('images/hist_pneumonia')
 
 plt.clf()
 
-plt.bar(np.arange(0,256), avgCountsNormal, alpha=0.5, label='Normal')
-plt.bar(np.arange(0,256), avgCountsPneu, alpha=0.5, label='Pneumonia')
+plt.bar(np.arange(0,256), avg_count_normal, alpha=0.5, label='Normal')
+plt.bar(np.arange(0,256), avg_counts_pneu, alpha=0.5, label='Pneumonia')
 plt.legend(loc='upper right')
 plt.savefig('images/hist_overlayed')
 print('Finished creating histograms')

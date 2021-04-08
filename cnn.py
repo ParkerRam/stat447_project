@@ -134,104 +134,111 @@ def coverage(table):
 
 ########################################################################################################################
 
-# Split into training and validation sets
-features = list(filter(lambda k: ('allLabel' not in k), train.columns))
-X = train[features]
-y = train['allLabel']
-X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42, test_size=0.2, stratify=y)
+"""
+Trains CNN and evaluates its performance same as the first 3 models
+"""
+def main():
+    # Split into training and validation sets
+    features = list(filter(lambda k: ('all_label' not in k), train.columns))
+    X = train[features]
+    y = train['all_label']
+    X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42, test_size=0.2, stratify=y)
 
-df_train = pd.DataFrame(np.column_stack((X_train, y_train)), columns=train.columns)
-df_val = pd.DataFrame(np.column_stack((X_val, y_val)), columns=train.columns)
+    df_train = pd.DataFrame(np.column_stack((X_train, y_train)), columns=train.columns)
+    df_val = pd.DataFrame(np.column_stack((X_val, y_val)), columns=train.columns)
 
-# Setup augmentation identical to before but including validation set
-train_datagen = ImageDataGenerator(rescale = 1./255,
-                                   featurewise_center=False,
-                                   samplewise_center=False, 
-                                   featurewise_std_normalization=False, 
-                                   samplewise_std_normalization=False, 
-                                   zca_whitening=False, 
-                                   rotation_range = 30,  
-                                   zoom_range = 0.2,
-                                   width_shift_range=0.1,  
-                                   height_shift_range=0.1,  
-                                   horizontal_flip = True, 
-                                   vertical_flip=False)
-test_datagen = ImageDataGenerator(rescale = 1./255) 
+    # Setup augmentation identical to before but including validation set
+    train_datagen = ImageDataGenerator(rescale=1./255,
+                                       featurewise_center=False,
+                                       samplewise_center=False,
+                                       featurewise_std_normalization=False,
+                                       samplewise_std_normalization=False,
+                                       zca_whitening=False,
+                                       rotation_range=30,
+                                       zoom_range=0.2,
+                                       width_shift_range=0.1,
+                                       height_shift_range=0.1,
+                                       horizontal_flip=True,
+                                       vertical_flip=False)
+    test_datagen = ImageDataGenerator(rescale=1./255)
 
-training_set = train_datagen.flow_from_dataframe(dataframe = df_train,
-                                                 directory = 'data/train',
-                                                 x_col = 'X_ray_image_name',
-                                                 y_col = 'allLabel', 
-                                                 target_size = (64, 64),
-                                                 batch_size = 32,
-                                                 color_mode = 'grayscale',
-                                                 class_mode = 'categorical')
+    training_set = train_datagen.flow_from_dataframe(dataframe=df_train,
+                                                     directory='data/train',
+                                                     x_col='X_ray_image_name',
+                                                     y_col='all_label',
+                                                     target_size=(64, 64),
+                                                     batch_size=32,
+                                                     color_mode='grayscale',
+                                                     class_mode='categorical')
 
-validation_set = test_datagen.flow_from_dataframe(dataframe = df_val,
-                                                  directory = 'data/train',
-                                                  x_col = 'X_ray_image_name',
-                                                  y_col = 'allLabel', 
-                                                  target_size = (64, 64),
-                                                  batch_size = 32,
-                                                  color_mode = 'grayscale',
-                                                  class_mode = 'categorical')
+    validation_set = test_datagen.flow_from_dataframe(dataframe=df_val,
+                                                      directory='data/train',
+                                                      x_col='X_ray_image_name',
+                                                      y_col='all_label',
+                                                      target_size=(64, 64),
+                                                      batch_size=32,
+                                                      color_mode='grayscale',
+                                                      class_mode='categorical')
 
-test_set = test_datagen.flow_from_dataframe(dataframe = df_test,
-                                            directory = 'data/test',
-                                            x_col = 'X_ray_image_name',
-                                            y_col = 'allLabel', 
-                                            target_size = (64, 64),
-                                            batch_size = 32,
-                                            color_mode = 'grayscale',
-                                            class_mode = 'categorical',
-                                            shuffle = False)
+    test_set = test_datagen.flow_from_dataframe(dataframe=df_test,
+                                                directory='data/test',
+                                                x_col='X_ray_image_name',
+                                                y_col='all_label',
+                                                target_size=(64, 64),
+                                                batch_size=32,
+                                                color_mode='grayscale',
+                                                class_mode='categorical',
+                                                shuffle=False)
 
-# CNN structure based off the following kaggle project
-# https://www.kaggle.com/sanwal092/intro-to-cnn-using-keras-to-predict-pneumonia
-cnn = Sequential()
-cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(64, 64, 1)))
-cnn.add(MaxPooling2D(pool_size = (2, 2)))
-cnn.add(Conv2D(32, (3, 3), activation="relu"))
-cnn.add(MaxPooling2D(pool_size = (2, 2)))
-cnn.add(Flatten())
-cnn.add(Dense(activation = 'relu', units = 128))
-cnn.add(Dense(activation = 'softmax', units = 4))
-cnn.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+    # CNN structure based off the following kaggle project
+    # https://www.kaggle.com/sanwal092/intro-to-cnn-using-keras-to-predict-pneumonia
+    cnn = Sequential()
+    cnn.add(Conv2D(32, (3, 3), activation = "relu", input_shape = (64, 64, 1)))
+    cnn.add(MaxPooling2D(pool_size = (2, 2)))
+    cnn.add(Conv2D(32, (3, 3), activation="relu"))
+    cnn.add(MaxPooling2D(pool_size = (2, 2)))
+    cnn.add(Flatten())
+    cnn.add(Dense(activation = 'relu', units = 128))
+    cnn.add(Dense(activation = 'softmax', units = 4))
+    cnn.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
-print('Training CNN...\n')
-cnn_model = cnn.fit(training_set,
-                    epochs = 160,
-                    validation_data = validation_set)
-print('Finished training CNN\n')
+    print('Training CNN...\n')
+    cnn_model = cnn.fit(training_set,
+                        epochs = 160,
+                        validation_data = validation_set)
+    print('Finished training CNN\n')
 
-# Accuracy 
-plt.plot(cnn_model.history['accuracy'])
-plt.plot(cnn_model.history['val_accuracy'])
-plt.title('Model Accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(['Training set', 'Validation set'], loc='upper left')
-plt.savefig('images/cnn_epochs')
+    # Accuracy
+    plt.plot(cnn_model.history['accuracy'])
+    plt.plot(cnn_model.history['val_accuracy'])
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Training set', 'Validation set'], loc='upper left')
+    plt.savefig('images/cnn_epochs')
 
-# Get true labels in test set and convert from numerical to labels
-actual = pd.get_dummies(pd.Series(test_set.classes)).to_numpy()
-actual = actual.argmax(axis=-1)
-actual = np.where(actual == 0, 'Bacteria', actual)
-actual = np.where(actual == '1', 'COVID-19', actual)
-actual = np.where(actual == '2', 'Healthy', actual)
-actual = np.where(actual == '3', 'Other Virus', actual)
+    # Get true labels in test set and convert from numerical to labels
+    actual = pd.get_dummies(pd.Series(test_set.classes)).to_numpy()
+    actual = actual.argmax(axis=-1)
+    actual = np.where(actual == 0, 'Bacteria', actual)
+    actual = np.where(actual == '1', 'COVID-19', actual)
+    actual = np.where(actual == '2', 'Healthy', actual)
+    actual = np.where(actual == '3', 'Other Virus', actual)
 
-# Predict on test set
-test_probs_cnn = cnn.predict(test_set)
-cnn.evaluate(test_set)
+    # Predict on test set
+    test_probs_cnn = cnn.predict(test_set)
+    cnn.evaluate(test_set)
 
-# Convert numerized predictions to labels
-test_preds_cnn = test_probs_cnn.argmax(axis=-1)
-test_preds_cnn = np.where(test_preds_cnn == 0, 'Bacteria', test_preds_cnn)
-test_preds_cnn = np.where(test_preds_cnn == '1', 'COVID-19', test_preds_cnn)
-test_preds_cnn = np.where(test_preds_cnn == '2', 'Healthy', test_preds_cnn)
-test_preds_cnn = np.where(test_preds_cnn == '3', 'Other Virus', test_preds_cnn)
+    # Convert numerized predictions to labels
+    test_preds_cnn = test_probs_cnn.argmax(axis=-1)
+    test_preds_cnn = np.where(test_preds_cnn == 0, 'Bacteria', test_preds_cnn)
+    test_preds_cnn = np.where(test_preds_cnn == '1', 'COVID-19', test_preds_cnn)
+    test_preds_cnn = np.where(test_preds_cnn == '2', 'Healthy', test_preds_cnn)
+    test_preds_cnn = np.where(test_preds_cnn == '3', 'Other Virus', test_preds_cnn)
 
-# Evaluate CNN
-print('CNN Results')
-calculatePerformance(actual, test_preds_cnn, test_probs_cnn)
+    # Evaluate CNN
+    print('CNN Results')
+    calculatePerformance(actual, test_preds_cnn, test_probs_cnn)
+
+if __name__ == "__main__":
+    main()
