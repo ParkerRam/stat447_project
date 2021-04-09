@@ -5,8 +5,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import GridSearchCV
-import matplotlib.pyplot as plt
-from itertools import combinations
 
 # import training and holdout data frames from pkl files (that were created from running exploratory_analysis.py)
 df_train = pd.read_pickle('data/train.pkl')
@@ -128,6 +126,7 @@ def calculatePerformance(actual, preds, probas):
     print('\n')
 
 
+# NOTE: THIS FUNCTION TAKES A LONG TIME TO RUN!!!
 """
 Returns model with best AUC using hyperparameters found via grid search 4-fold cross validation 
 Params:
@@ -221,24 +220,6 @@ def coverage(table):
     return avg_len, miss, miss/row_freq, cover/row_freq
 
 """
-Plots comparison probability plot of the predictions of 2 fitted models
-Params:
-    method1: 1st method to compare
-    method2: 2nd method to compare
-    pred1: predicted probabilities of method1
-    pred2: predicted probabilities of method2 
-Returns:
-    plot with method1 on x-axis, and method2 on y-axis, and values of scatterplot are predicted probabilities
-"""
-def comparisonProbabilityPlot(method1, method2, pred1, pred2):
-    plt.scatter(np.asarray(pred1), np.asarray(pred2))
-    plt.title("Probability Comparison plot")
-    plt.xlabel(method1)
-    plt.ylabel(method2)
-    plt.savefig('images/compare/compare_' + method1 + '_' + method2)
-    plt.clf()
-
-"""
 Returns calculated F1-score 
 Params:
     actual: true values of classes in holdout set
@@ -274,6 +255,8 @@ def main():
         'penalty': ['l2'],
         'C': [1.0, 10]
     }
+
+    # NOTE: Hyperparam tuning FUNCTION TAKES A LONG TIME TO RUN!!!
     best_logit = hyperparamTuning(LogisticRegression(multi_class='multinomial', solver='saga', max_iter = 1000000, class_weight = 'balanced'),
                                   logit_grid, x_train, y_train)
     test_pred_logit, test_prob_logit = calculatePredict(best_logit, x_test)
@@ -293,6 +276,7 @@ def main():
         'n_estimators': [200, 400, 1000, 1400],
         'max_depth':[10, 20, 30, None]
     }
+    # NOTE: Hyperparam tuning FUNCTION TAKES A LONG TIME TO RUN!!!
     best_rf = hyperparamTuning(RandomForestClassifier(class_weight = 'balanced'),
                                rf_grid, x_train, y_train)
     test_pred_rf, test_prob_rf = calculatePredict(best_rf, x_test)
@@ -311,6 +295,7 @@ def main():
     ada_grid = {
         'n_estimators': [50,100,500,1000]
     }
+    # NOTE: Hyperparam tuning FUNCTION TAKES A LONG TIME TO RUN!!!
     best_ada = hyperparamTuning(AdaBoostClassifier(),
                                 ada_grid, x_train, y_train)
     test_pred_ada, test_prob_ada = calculatePredict(best_ada, x_test)
@@ -323,15 +308,6 @@ def main():
 
     test_probs["Ada Boost"] = test_prob_ada
     test_probs["Ada Boost Subset"] = test_prob_subset_ada
-
-    # for each method, create comparison plots probabilities vs other method
-    comparisons = combinations(test_probs.keys(), 2)
-    for comparison in comparisons:
-        # print(comparison)
-        method1, method2 = comparison
-        pred1 = test_probs[method1]
-        pred2 = test_probs[method2]
-        comparisonProbabilityPlot(method1, method2, pred1, pred2)
 
 if __name__ == "__main__":
     main()
