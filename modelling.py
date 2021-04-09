@@ -248,8 +248,6 @@ def main():
     x_train, y_train = separateXandY(df_train)
     x_test, y_test = separateXandY(df_test)
 
-    test_probs = {}
-
     print("\n=============== LOGIT REGRESSION ===============")
     logit_grid = {
         'penalty': ['l2'],
@@ -266,9 +264,6 @@ def main():
     best_logit_subset, selected_features_logit = trainSubsetModel(best_logit, x_train, y_train)
     test_pred_subset_logit, test_prob_subset_logit = calculatePredict(best_logit_subset, x_test[selected_features_logit])
     calculatePerformance(y_test, test_pred_subset_logit, test_prob_subset_logit)
-
-    test_probs["Logit"] = test_prob_logit
-    test_probs["Logit Subset"] = test_prob_subset_logit
 
 
     print("\n=============== RANDOM FOREST ===============")
@@ -287,10 +282,6 @@ def main():
     test_pred_subset_rf, test_prob_subset_rf = calculatePredict(best_rf_subset, x_test[selected_features_rf])
     calculatePerformance(y_test, test_pred_subset_rf, test_prob_subset_rf)
 
-    test_probs["Random Forest"] = test_prob_rf
-    test_probs["Random Forest Subset"] = test_prob_subset_rf
-
-
     print("\n=============== ADA BOOST ===============")
     ada_grid = {
         'n_estimators': [50,100,500,1000]
@@ -305,9 +296,6 @@ def main():
     best_ada_subset, selected_features_ada = trainSubsetModel(best_ada, x_train, y_train)
     test_pred_subset_ada, test_prob_subset_ada = calculatePredict(best_ada_subset, x_test[selected_features_ada])
     calculatePerformance(y_test, test_pred_subset_ada, test_prob_subset_ada)
-
-    test_probs["Ada Boost"] = test_prob_ada
-    test_probs["Ada Boost Subset"] = test_prob_subset_ada
 
 if __name__ == "__main__":
     main()
