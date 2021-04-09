@@ -1,14 +1,18 @@
 # STAT 447 Project
  
-Download the data [here](https://www.kaggle.com/praveengovi/coronahack-chest-xraydataset?select=Chest_xray_Corona_dataset_Summary.csv) and setup directory like the following
+Download the data [here](https://www.kaggle.com/praveengovi/coronahack-chest-xraydataset?select=Chest_xray_Corona_dataset_Summary.csv) and setup directory like the following.
+
+The script transforming the data for the models takes quite long so pkl files of the transformed data can be downloaded [here](https://drive.google.com/drive/folders/1E-YuvdQqDUIankhK5OkuN6TPJHYNBEY-?usp=sharing) and placed in the directory as below.
 ```
 stat447_project
 │   README.md
-│   requirements.txt    
+│   requirements.txt
+|   *.py
 │
 └───data
     │   Chest_xray_Corona_dataset_Summary.csv
     │   Chest_xray_Corona_Metadata.csv
+    |   *.pkl
     │
     └───train
     │        ...
