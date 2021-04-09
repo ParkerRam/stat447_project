@@ -139,9 +139,9 @@ Trains CNN and evaluates its performance same as the first 3 models
 """
 def main():
     # Split into training and validation sets
-    features = list(filter(lambda k: ('all_label' not in k), train.columns))
+    features = list(filter(lambda k: ('allLabel' not in k), train.columns))
     X = train[features]
-    y = train['all_label']
+    y = train['allLabel']
     X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42, test_size=0.2, stratify=y)
 
     df_train = pd.DataFrame(np.column_stack((X_train, y_train)), columns=train.columns)
@@ -165,7 +165,7 @@ def main():
     training_set = train_datagen.flow_from_dataframe(dataframe=df_train,
                                                      directory='data/train',
                                                      x_col='X_ray_image_name',
-                                                     y_col='all_label',
+                                                     y_col='allLabel',
                                                      target_size=(64, 64),
                                                      batch_size=32,
                                                      color_mode='grayscale',
@@ -174,7 +174,7 @@ def main():
     validation_set = test_datagen.flow_from_dataframe(dataframe=df_val,
                                                       directory='data/train',
                                                       x_col='X_ray_image_name',
-                                                      y_col='all_label',
+                                                      y_col='allLabel',
                                                       target_size=(64, 64),
                                                       batch_size=32,
                                                       color_mode='grayscale',
@@ -183,7 +183,7 @@ def main():
     test_set = test_datagen.flow_from_dataframe(dataframe=df_test,
                                                 directory='data/test',
                                                 x_col='X_ray_image_name',
-                                                y_col='all_label',
+                                                y_col='allLabel',
                                                 target_size=(64, 64),
                                                 batch_size=32,
                                                 color_mode='grayscale',

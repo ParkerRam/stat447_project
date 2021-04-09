@@ -54,7 +54,7 @@ def cleanData(df):
         else:
             all_label = 'Other Virus'
 
-        df.at[index, 'all_label'] = all_label
+        df.at[index, 'allLabel'] = all_label
 
     df_train = df[df['Dataset_type'] == 'TRAIN']
     df_test = df[df['Dataset_type'] == 'TEST']
@@ -91,7 +91,7 @@ def augmentImage(df_train, df_test):
     train_flow = train_datagen.flow_from_dataframe(dataframe=df_train,
                                                    directory='data/train',
                                                    x_col='X_ray_image_name',
-                                                   y_col='all_label',
+                                                   y_col='allLabel',
                                                    target_size=(PIXELS_RESIZE, PIXELS_RESIZE),
                                                    color_mode='grayscale',
                                                    class_mode='raw')
@@ -99,7 +99,7 @@ def augmentImage(df_train, df_test):
     test_flow = test_datagen.flow_from_dataframe(dataframe=df_test,
                                                  directory='data/test',
                                                  x_col='X_ray_image_name',
-                                                 y_col='all_label',
+                                                 y_col='allLabel',
                                                  target_size=(PIXELS_RESIZE, PIXELS_RESIZE),
                                                  color_mode='grayscale',
                                                  class_mode='raw')
